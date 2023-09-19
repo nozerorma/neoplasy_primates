@@ -1,0 +1,63 @@
+family	species	common_name	necropsy_count	neoplasia_necropsy	neoplasia_prevalence
+Atelidae	Alouatta caraya	Black howler	40	4	0.1
+Aotidae	Aotus griseimembra	Grey-handed night monkey	26	0	0
+Atelidae	Ateles fusciceps rufiventris	Colombian black spider monkey	24	0	0
+Atelidae	Ateles geoffroyi	Black-handed spider monkey	29	13	0.448275862068966
+Callitrichidae	Callimico goeldii	Goeldi's monkey	161	17	0.105590062111801
+Callitrichidae	Callithrix geoffroyi	White-fronted marmoset	91	3	0.032967032967033
+Callitrichidae	Callithrix jacchus	Common marmoset	146	1	0.00684931506849315
+Callitrichidae	Cebuella pygmaea	Pygmy marmoset	176	6	0.0340909090909091
+Cebidae	Cebus capucinus	White-throated capuchin	20	0	0
+Cercopithecidae	Cercopithecus neglectus	De Brazza's monkey	42	2	0.0476190476190476
+Cheirogaleidae	Cheirogaleus medius	Fat-tailed dwarf lemur	27	3	0.111111111111111
+Cercopithecidae	Colobus guereza	Eastern black-and-white colobus	141	10	0.0709219858156028
+Cercopithecidae	Erythrocebus patas	Patas monkey	38	2	0.0526315789473684
+Lemuridae	Eulemur coronatus	Crowned lemur	28	9	0.321428571428571
+Lemuridae	Eulemur macaco	Black lemur	31	9	0.290322580645161
+Lemuridae	Eulemur mongoz	Mongoose lemur	32	7	0.21875
+Galagidae	Galago moholi	Moholi bushbaby	46	3	0.0652173913043478
+Galagidae	Galago senegalensis	Senegal bushbaby	84	1	0.0119047619047619
+Hominidae	Gorilla gorilla	Gorilla	93	14	0.150537634408602
+Hylobatidae	Hylobates lar	Lar gibbon	58	7	0.120689655172414
+Lemuridae	Lemur catta	Ring-tailed lemur	399	38	0.0952380952380952
+Callitrichidae	Leontocebus fuscicollis	Saddleback tamarin	68	1	0.0147058823529412
+Callitrichidae	Leontopithecus chrysomelas	Golden-headed lion tamarin	71	6	0.0845070422535211
+Callitrichidae	Leontopithecus rosalia	Golden lion tamarin	184	11	0.0597826086956522
+Cercopithecidae	Macaca fascicularis	Crab-eating macaque	68	2	0.0294117647058824
+Cercopithecidae	Macaca fuscata	Japanese macaque	57	4	0.0701754385964912
+Cercopithecidae	Macaca mulatta	Rhesus macaque	28	1	0.0357142857142857
+Cercopithecidae	Macaca nigra	Sulawesi crested macaque	55	1	0.0181818181818182
+Cercopithecidae	Macaca silenus	Lion-tailed macaque	91	6	0.0659340659340659
+Cercopithecidae	Macaca sylvanus	Barbary macaque	122	1	0.00819672131147541
+Cercopithecidae	Mandrillus sphinx	Mandrill	80	4	0.05
+Callitrichidae	Mico argentatus	Silvery marmoset	80	1	0.0125
+Cheirogaleidae	Microcebus murinus	Grey mouse lemur	61	14	0.229508196721311
+Cercopithecidae	Nasalis larvatus	Proboscis monkey	34	0	0
+Hylobatidae	Nomascus leucogenys	Northern white-cheeked gibbon	23	0	0
+Lorisidae	Nycticebus coucang	Slow loris	27	2	0.0740740740740741
+Lorisidae	Nycticebus pygmaeus	Pygmy slow loris	77	13	0.168831168831169
+Hominidae	Pan troglodytes	Chimpanzee	113	16	0.141592920353982
+Cercopithecidae	Papio hamadryas	Hamadryas baboon	158	5	0.0316455696202532
+Pitheciidae	Pithecia pithecia	White-faced saki	78	0	0
+Pitheciidae	Plecturocebus donacophilus	Bolivian gray titi	46	1	0.0217391304347826
+Hominidae	Pongo abelii	Sumatran orangutan	30	1	0.0333333333333333
+Hominidae	Pongo pygmaeus	Bornean orangutan	24	3	0.125
+Indriidae	Propithecus coquereli	Coquerel's sifaka	50	4	0.08
+Callitrichidae	Saguinus bicolor	Pied tamarin	57	1	0.0175438596491228
+Callitrichidae	Saguinus geoffroyi	Geoffroy's tamarin	41	3	0.0731707317073171
+Callitrichidae	Saguinus imperator	Emperor tamarin	81	0	0
+Callitrichidae	Saguinus leucopus	White-footed tamarin	27	2	0.0740740740740741
+Callitrichidae	Saguinus midas	Red-handed tamarin	69	1	0.0144927536231884
+Callitrichidae	Saguinus mystax	Moustached tamarin	41	0	0
+Callitrichidae	Saguinus oedipus	Cotton-top tamarin	309	27	0.08737864078
+Cebidae	Saimiri boliviensis	Black-capped squirrel monkey	99	0	0
+Cebidae	Saimiri sciureus	Guianan squirrel monkey	192	11	0.0572916666666667
+Cebidae	Sapajus apella	Tufted capuchin	38	3	0.0789473684210526
+Hylobatidae	Symphalangus syndactylus	Siamang	45	4	0.0888888888888889
+Cercopithecidae	Theropithecus gelada	Gelada baboon	72	1	0.0138888888888889
+Cercopithecidae	Trachypithecus auratus auratus	Javan silvered leaf monkey	24	0	0
+Cercopithecidae	Trachypithecus cristatus	Silvery langur	80	1	0.0125
+Cercopithecidae	Trachypithecus francoisi	Francois' langur	47	5	0.106382978723404
+Cercopithecidae	Trachypithecus obscurus	Dusky leaf monkey	21	2	0.0952380952380952
+Lemuridae	Varecia rubra	Red ruffed lemur	83	11	0.132530120481928
+Lemuridae	Varecia variegata 	Black-and-white ruffed lemur	115	17	0.147826086956522
