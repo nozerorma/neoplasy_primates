@@ -1,11 +1,17 @@
 # CANCER PROYECT
 
 ## This is a very funky README including the aspects discussed in the first meeting. It wil be updated as soon as things get going.
+Monovariable assay probably only including BM (Peto's Paradox) for correlation to Neoplasy (probably also benignancy/malignancy).
+- List of primates we have cancer data for (n=62)
+- List of primates we have cell cultures of (n=9)
+- Data from the 233 genomes from the consortium
+- Four phenotypes
+    1) Neoplasia prevalence
+    2) Malignancy prevalence
+    3) Malignant transformation ratio
+    4) DNA damage response (from the cell assays) 
 
 ### ABOUT ACTUAL METHODOLOGY
-
-##### Monovariable assay probably only including BM (Peto's Paradox)
-
 ##### Gene Discovery
 - **RERConverge**: once per phenotype FOR THE WHOLE PHYLOGENY (nextflow?)
 - **CAASTools**: tricky because of the scenarios. Some possibilities that must be taken into account include the double-trouble analysis, first splitting, then co-analyzing (see those nice **Venn Diagrams**)
