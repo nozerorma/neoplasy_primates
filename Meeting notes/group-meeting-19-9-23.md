@@ -1,7 +1,4 @@
 # CANCER PROYECT
-
-This is a very funky README including the aspects discussed in the first meeting. It wil be updated as soon as things get going.
-
 Monovariable assay probably only including BM (petos paradox)
 
 ### About the different scenarios
