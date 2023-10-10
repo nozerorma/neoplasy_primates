@@ -2,33 +2,56 @@
 ## The idea is to group the species given their branch lengths instead of the 
 ## archeotypical taxon view, which is somewhat biassed.
 
-# Tree import
-
-# NOT RUN {
+set.seed(22)
 library(ape)
 library(RRphylo)
 
-set.seed(22)
-rtree(100)->tree
-30->age
+# Tree import
 
+tree <- read.newick("Data/233-GENOMES/science.abn7829_data_s4.nex.tree")
+
+# Generate tree cuts at given ages
 at30 <- cutPhylo(tree,age=30)
 at20 <- cutPhylo(tree,age=20)
-cutPhylo(tree,node=30)->t2
-cutPhylo(tree,node=30,keep.lineage=TRUE)->t2
-# }
 
-library(ape)
 
-ggtree(tree) + geom_tippoint(aes(color=factor(at30)))
+# Read csv for neoplasia trait
 
-df <- data.frame(label = tree$tip.label, cluster = clusters_wardd2)
-ggtree(tree) + geom_tippoint(aes(color=factor(cluster)), data=df) + scale_color_discrete(name="Cluster")
+cancer_species_traits <- read.csv("Data/Neoplasia/species360_primates_neoplasia_20230519.pruned.csv", header=T, sep = ",")
 
-tip_labels <- tree$tip.label
-reordered_clusters <- clusters_wardd2[tip_labels]
+# Normalize name using binomial syntax
+cancer_species_traits$SPECIES_BINOMIAL <- sub(" ", "_", cancer_species_traits$species)
+cancer_species_traits$SPECIES_BINOMIAL -> speciesbin
+speciesbin -> names(speciesbin)
 
-ggtree(tree) + geom_tippoint(aes(color=factor(reordered_clusters))) + scale_color_discrete(name="Cluster")
+pruned_tree <- treedataMatch(tree=tree,y=speciesbin)
+removed_tree <- pruned_tree$removed.from.tree
+removed_phenotype <- pruned_tree$removed.from.y
+
+# Are the missing ones really missing?
+
+# Extract the prefix (before the underscore) for each element in removed_phenotype
+prefixes <- sapply(strsplit(removed_phenotype, "_"), `[`, 1)
+
+# Convert both vectors to lowercase for case-insensitive matching
+prefixes_lower <- tolower(prefixes)
+tree_tips_lower <- tolower(tree$tip.label)
+
+# Identify any tree tip label that starts with the extracted prefix
+matching_tips <- sapply(prefixes_lower, function(prefix) {
+  grep(paste0("^", prefix), tree_tips_lower)
+})
+
+
+# Flatten the list to a vector
+matched_indices <- unique(unlist(matching_tips))
+
+
+# Extract the labels that matched
+matched_tree_tips <- tree$tip.label[matched_indices]
+matched_tree_tips_suf <- tree$tip.label[matched_indices_suf]
+
+
 
 ######################################
 ####All species trait distribution####
@@ -70,12 +93,7 @@ library(ape)
 library(randomcoloR)
 library(phytools)
 
-# Read csv for neoplasia trait
 
-cancer_species_traits <- read.csv("/home/miguel/TFM/Master_projects/NEOPLASY_PRIMATES/Data/Neoplasia/species360_primates_neoplasia_20230519.csv", header=T, sep = "\t")
-
-# Normalize name using binomial syntax
-cancer_species_traits$SPECIES_BINOMIAL <- sub(" ", "_", cancer_species_traits$species)
 
 # Tree input
 tree <- read.newick("./Data/233-GENOMES/science.abn7829_data_s3.nw.tree")
