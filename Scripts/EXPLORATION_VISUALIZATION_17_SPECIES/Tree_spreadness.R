@@ -1,4 +1,4 @@
-######################################
+####################################
 ##COMPONENTS STUDY FOR TRAITS GROUPS##
 ###BASED ON PRESENCE/ABSCENSE, TO ###
 ###DETERMINE CONSISTENCY FROM DIFFERENT ##
@@ -17,7 +17,7 @@ library(tidyr)
 library(tidyverse)
 library(reshape2)
 library(dendextend)
-library(ComplexHeatmap)
+#library(ComplexHeatmap)
 library("factoextra")
 library("circlize")
 library("RColorBrewer")

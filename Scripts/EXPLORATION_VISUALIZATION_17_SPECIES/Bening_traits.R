@@ -103,5 +103,3 @@ hist(melted_dataframe_traits$value[which(melted_dataframe_traits$Trait == "PropB
 hist((melted_dataframe_traits$value[which(melted_dataframe_traits$Trait == "PropBenign")]-
                                       mean(melted_dataframe_traits$value[which(melted_dataframe_traits$Trait == "PropBenign")]))/
        sd(melted_dataframe_traits$value[which(melted_dataframe_traits$Trait == "PropBenign")]))
-  
-  + 0.001))
