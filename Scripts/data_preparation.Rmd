@@ -1,0 +1,108 @@
+################################## 
+
+# DATA PREPARATION
+
+### PRIMATES' NEOPLASY PROJECT
+
+### MIGUEL RAMON ALONSO
+
+################################## 
+
+---
+output: html
+---
+
+```{r setup}
+knitr::opts_knit$set(root.dir = "..")
+knitr::opts_chunk$set(engine.path = list(
+python = '/root/PRIMATES_NEOPLASY_DA/TreeCluster/venv/bin/python'))
+getwd()
+```
+
+```{r check-wd}
+getwd()
+```
+
+### Seed and library loading
+
+```{r}
+set.seed(22)
+library(ape)
+library(RRphylo)
+library(phytools)
+```
+
+### Import cancer traitfile
+
+```{r}
+cancer_traits <- read.csv("/root/PRIMATES_NEOPLASY_DA/Data/Neoplasia/species360_primates_neoplasia_20230519.csv", sep = "\t")
+```
+
+### File modifications that must be performed
+
+#### Spaces at the end, name dissimilarities and stuff like that
+
+```{r}
+cancer_traits[] <- lapply(cancer_traits, function(col) trimws(col))
+```
+
+### Binarize species name for standarization
+
+```{r}
+cancer_traits$SPECIES_BINOMIAL <- sub(" ", "_", cancer_traits$species)
+```
+
+#### Name the binzarized object
+
+```{r}
+cancer_species_bin <- cancer_traits$SPECIES_BINOMIAL 
+```
+
+### Tree observation and prunning
+
+```{r}
+tree <- read.newick("/root/PRIMATES_NEOPLASY_DA/Data/233-GENOMES/science.abn7829_data_s4.nex.tree")
+
+# Give a name to species name attribute
+tree_species <- tree$tip.label
+```
+
+#### First we need to observe if there are any discordances between the two namesets (tree and traits)
+
+```{r}
+library(stringdist)
+
+# Matrix of pairwise string distances
+dist_matrix <- stringdist::stringdistmatrix(tree_species, cancer_species_bin, method = "lv")
+
+# Find coincidences where the distance is 0 (exact match) or 1 or 2
+threshold <- 2
+coincidences <- which(dist_matrix <= threshold, arr.ind = TRUE)
+
+# Make cancer_species_bin strings concordant with tree_species strings for the close matches
+cancer_species_bin[coincidences[, 2]] <- tree_species[coincidences[, 1]]
+non_concordant_indices <- setdiff(1:length(cancer_species_bin), coincidences[, 2])
+cancer_species_bin <- cancer_species_bin[-non_concordant_indices]
+names(cancer_species_bin) <- NULL
+names(cancer_species_bin) <- cancer_species_bin 
+
+print(cancer_species_bin)
+```
+
+#### Prunning
+
+```{r}
+pruned_tree <- treedataMatch(tree=tree,y=cancer_species_bin)
+write.tree(pruned_tree$tree, file="/root/PRIMATES_NEOPLASY_DA/Out/tree_prunning/science.abn7829_data_s4.nex.tree.pruned")
+```
+
+### Clustering by branch depth
+
+
+
+
+-i: input tree -o: output clusters -t: length threshold; 7.66460 was identified as most representative clustering threshold (Best Threshold: 7.664640) -tf: Argmax Clusters: Choose the threshold that maximizes the number of non-singleton clusters over all thresholds from 0 to t
+
+#### Now in here different clustering at different branch lengths and using different methods should be looked at
+
+

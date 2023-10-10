@@ -10,10 +10,6 @@ library(RRphylo)
 
 tree <- read.newick("Data/233-GENOMES/science.abn7829_data_s4.nex.tree")
 
-# Generate tree cuts at given ages
-at30 <- cutPhylo(tree,age=30)
-at20 <- cutPhylo(tree,age=20)
-
 
 # Read csv for neoplasia trait
 
@@ -32,16 +28,20 @@ removed_phenotype <- pruned_tree$removed.from.y
 
 # Extract the prefix (before the underscore) for each element in removed_phenotype
 prefixes <- sapply(strsplit(removed_phenotype, "_"), `[`, 1)
+suffixes <- sapply(strsplit(removed_phenotype, "_"), `[`,2)
 
 # Convert both vectors to lowercase for case-insensitive matching
 prefixes_lower <- tolower(prefixes)
+suffixes_lower <- tolower(suffixes)
 tree_tips_lower <- tolower(tree$tip.label)
 
 # Identify any tree tip label that starts with the extracted prefix
 matching_tips <- sapply(prefixes_lower, function(prefix) {
   grep(paste0("^", prefix), tree_tips_lower)
 })
-
+matching_tips_suf <- sapply(suffixes_lower, function(suffix) {
+  grep(paste0(suffix), tree_tips_lower)
+})
 
 # Flatten the list to a vector
 matched_indices <- unique(unlist(matching_tips))
@@ -51,6 +51,22 @@ matched_indices <- unique(unlist(matching_tips))
 matched_tree_tips <- tree$tip.label[matched_indices]
 matched_tree_tips_suf <- tree$tip.label[matched_indices_suf]
 
+# export pruned tree
+write.tree(pruned_tree$tree, file="Data/233-GENOMES/science.abn7829_data_s4.nex.tree.pruned")
+
+
+# Okay now let's work with the tree
+## Visualization
+
+ggtree(pruned_tree$tree) + 
+  geom_tiplab() + 
+  geom_treescale(x=0, fontsize=3) +
+  theme(legend.position="bottom")
+
+# Generate tree cuts at given ages
+
+at30 <- cutPhylo(pruned_tree$tree,age=30)
+at20 <- cutPhylo(pruned_tree$tree,age=20)
 
 
 ######################################

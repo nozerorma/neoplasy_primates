@@ -371,6 +371,23 @@
       ],
       "Hash": "1d6ed2d006d483f31c6d5531f3a39923"
     },
+    "RRphylo": {
+      "Package": "RRphylo",
+      "Version": "2.7.0",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Requirements": [
+        "R",
+        "ape",
+        "doParallel",
+        "emmeans",
+        "foreach",
+        "parallel",
+        "phytools",
+        "stats4"
+      ],
+      "Hash": "f0109dd936ea20f302199423d40db5a1"
+    },
     "Rcpp": {
       "Package": "Rcpp",
       "Version": "1.0.10",
