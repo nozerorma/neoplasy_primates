@@ -13,9 +13,9 @@ output: html
 ---
 
 ```{r setup}
-knitr::opts_knit$set(root.dir = "..")
+knitr::opts_knit$set(root.dir = "/home/rstudio/NEOPLASY_PRIMATES")
 knitr::opts_chunk$set(engine.path = list(
-python = '/root/PRIMATES_NEOPLASY_DA/TreeCluster/venv/bin/python'))
+python = '/home/rstudio/NEOPLASY_PRIMATES/TreeCluster/venv/bin/python'))
 getwd()
 ```
 
@@ -30,12 +30,13 @@ set.seed(22)
 library(ape)
 library(RRphylo)
 library(phytools)
+library(reticulate)
 ```
 
 ### Import cancer traitfile
 
 ```{r}
-cancer_traits <- read.csv("/root/PRIMATES_NEOPLASY_DA/Data/Neoplasia/species360_primates_neoplasia_20230519.csv", sep = "\t")
+cancer_traits <- read.csv("Data/Neoplasia/species360_primates_neoplasia_20230519.csv", sep = "\t")
 ```
 
 ### File modifications that must be performed
@@ -61,13 +62,68 @@ cancer_species_bin <- cancer_traits$SPECIES_BINOMIAL
 ### Tree observation and prunning
 
 ```{r}
-tree <- read.newick("/root/PRIMATES_NEOPLASY_DA/Data/233-GENOMES/science.abn7829_data_s4.nex.tree")
+nw_tree <- read.newick("Data/233-GENOMES/science.abn7829_data_s4.nex.tree")
 
 # Give a name to species name attribute
-tree_species <- tree$tip.label
+tree_species <- nw_tree$tip.label
 ```
 
 #### First we need to observe if there are any discordances between the two namesets (tree and traits)
+
+alternative
+```{r}
+library(stringdist)
+library(taxize)
+
+# Function to retrieve taxonomic classification for a species from NCBI
+get_taxonomic_classification <- function(species_name) {
+  uids <- get_uid(species_name)
+  
+  if (length(uids) > 0 && !is.na(uids[1])) {
+    taxo_info <- classification(uids[1], db = "ncbi")
+    if ("genus" %in% names(taxo_info) && "family" %in% names(taxo_info)) {
+      return(taxo_info)
+    }
+  }
+  
+  return(list(genus = NA, family = NA))
+}
+
+
+# Identify species that are directly present in the tree
+direct_matches <- cancer_species_bin %in% tree_species
+cancer_species_to_check <- cancer_species_bin[!direct_matches]
+
+# For species not present in the tree, check for close string matches
+dist_matrix <- stringdist::stringdistmatrix(tree_species, cancer_species_to_check, method = "lv")
+threshold <- 2
+close_matches <- which(dist_matrix <= threshold, arr.ind = TRUE)
+
+# Change the close matching species names in the dataset
+cancer_species_bin[which(!direct_matches)[close_matches[, 2]]] <- tree_species[close_matches[, 1]]
+
+# For the species that aren't direct or close matches, check taxonomic classifications
+remaining_indices <- setdiff(1:length(cancer_species_to_check), close_matches[, 2])
+for (i in remaining_indices) {
+  current_name <- cancer_species_to_check[i]
+  taxo_info <- get_taxonomic_classification(current_name)
+  
+  if (!is.null(taxo_info) && (taxo_info$genus %in% tree_species || taxo_info$family %in% tree_species)) {
+    closest_match <- tree_species[which.min(dist_matrix[,i])]
+    cat(paste("Changing", current_name, "to", closest_match, "based on taxonomic match.\n"))
+    cancer_species_bin[which(!direct_matches)[i]] <- closest_match
+  } else {
+    cat(paste("Removing", current_name, "as it doesn't match taxonomically.\n"))
+    cancer_species_bin[which(!direct_matches)[i]] <- NA
+  }
+}
+
+# Filter out NAs
+cancer_species_bin <- cancer_species_bin[!is.na(cancer_species_bin)]
+
+print(cancer_species_bin)
+
+```
 
 ```{r}
 library(stringdist)
@@ -82,27 +138,135 @@ coincidences <- which(dist_matrix <= threshold, arr.ind = TRUE)
 # Make cancer_species_bin strings concordant with tree_species strings for the close matches
 cancer_species_bin[coincidences[, 2]] <- tree_species[coincidences[, 1]]
 non_concordant_indices <- setdiff(1:length(cancer_species_bin), coincidences[, 2])
+removed_species_bin <- cancer_species_bin[non_concordant_indices]
 cancer_species_bin <- cancer_species_bin[-non_concordant_indices]
 names(cancer_species_bin) <- NULL
 names(cancer_species_bin) <- cancer_species_bin 
 
 print(cancer_species_bin)
 ```
+Falta mirar aquí si de las que no están, alguna tiene otro nombre!!
 
 #### Prunning
 
 ```{r}
-pruned_tree <- treedataMatch(tree=tree,y=cancer_species_bin)
-write.tree(pruned_tree$tree, file="/root/PRIMATES_NEOPLASY_DA/Out/tree_prunning/science.abn7829_data_s4.nex.tree.pruned")
+pruned_tree <- treedataMatch(tree=nw_tree,y=cancer_species_bin)
+
+# Rename the variable for posterior ease of use
+tree <- pruned_tree$tree
+write.tree(tree, file="Out/tree_prunning/science.abn7829_data_s4.nex.tree.pruned")
+
+# Prune cancer traifile
+pruned_cancer_traits <- pruned_cancer_traits[!(unlist(pruned_cancer_traits) %in% unlist(pruned_tree$))]
 ```
 
 ### Clustering by branch depth
 
+#### Re-concluded to do the exploration node-wise
+
+```{r}
+library(adephylo)
+library(castor)
+
+sorted_distances <- sort(get_all_distances_to_root(tree))
+
+# Identify duplicates rounded to 5 decimal places
+duplicates <- duplicated(round(unlist(sorted_distances), 5))
+
+# Remove duplicates
+unique_distances <- sorted_distances[!duplicates]
+
+# Generate and execute the bash commands using the system function
+for (index in seq_along(unique_distances)) {
+  node <- unique_distances[[index]]
+  
+  # Adding breaklines before the echo statement
+  system("echo ''")
+  
+  echo_command <- sprintf("echo %f", node)
+  system(echo_command)
+  
+  # Adding breaklines after the echo statement
+  system("echo ''")
+  
+  output_path <- sprintf("Out/tree_clustering/%d_cut_%f.clusters", index, node)
+  tree_cluster_command <- sprintf("python3 TreeCluster/TreeCluster.py -i Out/tree_prunning/science.abn7829_data_s4.nex.tree.pruned -t %f --method leaf_dist_max -v -o %s", node, output_path)
+  system(tree_cluster_command)
+}
+
+```
+
+### Now lets merge all the clusters into a single dataframe, including also the families
+```{r}
+library(dplyr)
+
+# Identify all cluster files
+cluster_files <- list.files(path = "Out/tree_clustering/", full.names = TRUE)
+
+# Function to read and process a single cluster file
+process_cluster_file <- function(file_path) {
+  # Extract just the filename without the extension
+  filename_no_ext <- tools::file_path_sans_ext(basename(file_path))
+  
+  # Extract the desired portion for the header by splitting on '_'
+  components <- strsplit(filename_no_ext, "_")[[1]]
+  cut_point <- paste0(components[length(components) - 1], "_", tail(components, 1))
+  
+  # Read the file into a dataframe
+  df <- read.csv(file_path, sep = "\t", stringsAsFactors = FALSE)
+  
+  # Rename columns
+  colnames(df)[colnames(df) == "SequenceName"] <- "SPECIES_BINOMIAL"
+  colnames(df)[colnames(df) == "ClusterNumber"] <- cut_point
+  
+  return(df)
+}
+
+# Process all cluster files
+list_of_dfs <- lapply(cluster_files, process_cluster_file)
+
+# Merge all dataframes by SequenceName
+clusters_df <- Reduce(function(x, y) {
+  merge(x, y, by = "SPECIES_BINOMIAL", all = TRUE)
+}, list_of_dfs)
+
+# Keep the SPECIES_BINOMIAL column fixed and order the rest
+ordered_columns <- c("SPECIES_BINOMIAL", sort(colnames(merged_df)[-1]))
+
+# Reorder the columns based on the sorted column names
+clusters_df <- merged_df[, ordered_columns]
+
+# Remove duplicated cuts and 0.000 cut
+clusters_unique <- clusters_df[, c(TRUE, !duplicated(as.list(clusters_df)))]
+clusters_unique <- clusters_unique[, !(names(clusters_unique) %in% "cut_0.000000")]
+
+# Add families from traitfile
+clusters_unique <- cbind(clusters_unique[,1], FAMILY=cancer_traits$family, clusters_unique[,-1])
+
+# Verificar el dataframe resultante
+print(clusters_df)
+
+```
+
+### Now lets see it!!!
+```{r}
+library(pheatmap)
+
+# Assuming `cluster_df` is the dataframe you've created earlier with species in rows and cuts as columns
+pheatmap(clusters_df[, -1],
+         scale = "none",
+         clustering_distance_rows = "euclidean",
+         clustering_distance_cols = "euclidean",
+         clustering_method = "complete",
+         show_rownames = TRUE,
+         show_colnames = TRUE)
+
+pheatmap(clusters_df[, -1], 
+         scale = "none",
+         clustering_distance_rows = "euclidean",
+         clustering_distance_cols = "euclidean",
+         clustering_method = "complete")
 
 
 
--i: input tree -o: output clusters -t: length threshold; 7.66460 was identified as most representative clustering threshold (Best Threshold: 7.664640) -tf: Argmax Clusters: Choose the threshold that maximizes the number of non-singleton clusters over all thresholds from 0 to t
-
-#### Now in here different clustering at different branch lengths and using different methods should be looked at
-
-
+```
