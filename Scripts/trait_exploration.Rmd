@@ -1,0 +1,206 @@
+---
+title: "trait_exploration"
+author: "Miguel Ramon"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup}
+
+knitr::opts_knit$set(root.dir = "/home/rstudio/NEOPLASY_PRIMATES")
+knitr::opts_chunk$set(engine.path = list(
+python = '/home/rstudio/NEOPLASY_PRIMATES/TreeCluster/venv/bin/python'))
+getwd()
+
+```
+
+```{r check-wd}
+
+getwd()
+
+```
+
+### Seed and library loading
+
+```{r,warning=FALSE,message=FALSE}
+
+set.seed(1998)
+
+# General use libraries
+library(ape)
+library(RRphylo)
+library(phytools)
+library(reticulate)
+
+# Non-concordant species retrieval 
+library(stringdist)
+library(taxize)
+library(R.utils)
+
+# Sort distances chunk
+library(adephylo)
+library(castor)
+
+# Cluster merging
+library(dplyr)
+
+# Plotting
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+library(viridis)
+library(ggtree)
+library(RColorBrewer)
+library(svglite)
+
+# From Alejandro
+library(e1071)
+
+```
+
+### Pruned tree import
+
+```{r}
+
+tree <- read.newick("Out/1.Pruning/tree_pruning/science.abn7829_data_s4.nex.tree.pruned")
+tree_species <- tree$tip.label
+
+```
+
+### Binarized Cancer traitfile import
+
+```{r}
+
+cancer_traits <- read.csv("Out/1.Pruning/cancer_species_traitfile.csv", sep = ",")
+
+```
+
+### Neoplasia prevalence exploration
+
+#### First we'll see how the phenotype is distributed throught the phylogeny
+#### Then we'll how it is distributed with using our constraints (family and cuts)
+
+```{r}
+
+# First we need to treat the traifile as before, removing those species not present in the phylogeny
+
+cancer_species_bin <- cancer_traits$SPECIES_BINOMIAL 
+
+
+# Function to retrieve synonyms for a species from ITIS
+# Simplified Function to retrieve accepted name for a species from ITIS
+get_synonyms <- function(species_name) {
+  retry <- TRUE
+  retries <- 0
+  max_retries <- 15  # Set a maximum number of retries to avoid an infinite loop
+  syns <- NULL
+  
+  while (retry && retries < max_retries) {
+    try(
+      # Set a 10-second timeout for the synonyms query
+      withTimeout({
+        syns <- synonyms(species_name, db = "itis", rows = 1)
+      }, timeout = 1),
+      silent = TRUE
+    )
+    
+    # Check if the query succeeded or timed out
+    if (!is.null(syns) && length(syns) > 0) {
+      retry <- FALSE  # Query succeeded, so exit the loop
+    } else {
+      Sys.sleep(2)  # Wait 5 seconds before retrying
+      retries <- retries + 1
+    }
+  }
+  
+  return(syns)
+}
+
+
+
+# Identify species that are directly present in the tree
+direct_matches <- cancer_species_bin %in% tree_species
+cancer_species_to_check <- cancer_species_bin[!direct_matches]
+
+# Remove subspecies information from cancer_species_to_check
+cancer_species_to_check <- sapply(strsplit(cancer_species_to_check, "_"), function(x) {
+  paste(x[1:2], collapse = "_")
+})
+
+
+# Check for close string matches
+dist_matrix <- stringdist::stringdistmatrix(tree_species, cancer_species_to_check, method = "lv")
+threshold <- 2
+close_matches <- which(dist_matrix <= threshold, arr.ind = TRUE)
+cancer_species_bin[which(!direct_matches)[close_matches[, 2]]] <- tree_species[close_matches[, 1]]
+
+# For the species that aren't direct or close matches, check synonyms
+remaining_indices <- setdiff(1:length(cancer_species_to_check), close_matches[, 2])
+for (i in remaining_indices) {
+  current_name <- cancer_species_to_check[i]
+
+  # Check for synonyms
+  accepted_name <- get_synonyms(current_name)
+
+  if (accepted_name %in% tree_species) {
+    cat(paste("Changing", current_name, "to", accepted_name, "based on accepted name match.\n"))
+    cancer_species_bin[which(!direct_matches)[i]] <- accepted_name
+  } else {
+    cat(paste("Removing", current_name, "as it doesn't match synonymically.\n"))
+    cancer_species_bin[which(!direct_matches)[i]] <- NA
+  }
+}
+
+# Note that every time that the above code fails, rest of the execution shuts so as soon as
+# query is done, run below code
+
+# Filter out NAs
+cancer_species_bin <- cancer_species_bin[!is.na(cancer_species_bin)]
+names(cancer_species_bin) <- cancer_species_bin
+print(cancer_species_bin)
+
+
+```
+
+```{r, fig.width = 18, fig.height = 18}
+
+# Okay first this is going to be shotguned from "All_species_distribution"
+
+
+# Neoplasia prevalence
+hist(cancer_traits$neoplasia_prevalence)
+
+# MELT dataset
+skewness(cancer_traits$neoplasia_prevalence)
+
+is_outlier <- function(x) {
+  return(x < quantile(x, 0.25) - 1.5 * IQR(x) | x > quantile(x, 0.75) + 1.5 * IQR(x))}
+
+# Associate a SPECIES_BINS to neoplasy rates
+Neoplasy <- cancer_traits$neoplasia_prevalence
+names(Neoplasy) <- tree_species
+Neoplasy <- Neoplasy[!is.na(names(Neoplasy))]
+  
+# Neoplasy prevalence
+obj<-contMap(tree,Neoplasy,plot=FALSE)
+obj<-setMap(obj,c("#077223", "#53EC2D", "white", "#F1F97C", 
+                  "#F08431", "#F03131"))
+plot(obj,fsize=c(1),lwd=c(5),leg.txt="Neoplasy prevalence")
+
+```
+
+```{r, fig.width = 18, fig.height = 18}
+
+medians <- t(cancer_traits[,-which(colnames(cancer_traits) %in% c("SPECIES_BINARIZED", "FAMILY"))] %>% 
+  summarize_all(., median))
+
+means <- t(cancer_traits[,-which(colnames(cancer_traits) %in% c("SPECIES_BINARIZED", "FAMILY"))] %>% 
+             summarize_all(., mean))
+
+sds <- t(cancer_traits[,-which(colnames(cancer_traits) %in% c("SPECIES_BINARIZED", "FAMILY"))] %>% 
+          summarize_all(., funs(sd)))
+
+maxs <-  t(cancer_traits[,-which(colnames(cancer_traits) %in% c("SPECIES_BINARIZED", "FAMILY"))] %>% 
+                   summarize_all(., max))
+
+```

@@ -1,8 +1,10 @@
 ---
-output:
-  pdf_document: default
-  html_document: default
+title: "data_preparation"
+author: "Miguel Ramon"
+date: "`r Sys.Date()`"
+output: html_document
 ---
+
 ################################## 
 
 # DATA PREPARATION
@@ -12,10 +14,6 @@ output:
 ### MIGUEL RAMON ALONSO
 
 ################################## 
-
----
-output: html
----
 
 ```{r setup}
 
@@ -98,7 +96,10 @@ cancer_traits[] <- lapply(cancer_traits, function(col) trimws(col))
 # Binarize species name for standarization
 cancer_traits$SPECIES_BINOMIAL <- gsub(" ", "_", cancer_traits$species)
 
-# Need to name the object to work wit it (not sure why)
+# Export binzarized traitfile for posterior use
+write.csv(cancer_traits, file="Out/1.Pruning/cancer_species_traitfile.csv")
+
+# Need to name the object to work wit it
 cancer_species_bin <- cancer_traits$SPECIES_BINOMIAL 
 
 ```
@@ -120,7 +121,7 @@ get_synonyms <- function(species_name) {
       # Set a 10-second timeout for the synonyms query
       withTimeout({
         syns <- synonyms(species_name, db = "itis", rows = 1)
-      }, timeout = 10),
+      }, timeout = 2),
       silent = TRUE
     )
     
@@ -128,7 +129,7 @@ get_synonyms <- function(species_name) {
     if (!is.null(syns) && length(syns) > 0) {
       retry <- FALSE  # Query succeeded, so exit the loop
     } else {
-      Sys.sleep(5)  # Wait 5 seconds before retrying
+      Sys.sleep(2)  # Wait 5 seconds before retrying
       retries <- retries + 1
     }
   }
@@ -154,22 +155,22 @@ threshold <- 2
 close_matches <- which(dist_matrix <= threshold, arr.ind = TRUE)
 cancer_species_bin[which(!direct_matches)[close_matches[, 2]]] <- tree_species[close_matches[, 1]]
 
-# # For the species that aren't direct or close matches, check synonyms
-# remaining_indices <- setdiff(1:length(cancer_species_to_check), close_matches[, 2])
-# for (i in remaining_indices) {
-#   current_name <- cancer_species_to_check[i]
-#   
-#   # Check for synonyms
-#   accepted_name <- get_synonyms(current_name)
-#   
-#   if (accepted_name %in% tree_species) {
-#     cat(paste("Changing", current_name, "to", accepted_name, "based on accepted name match.\n"))
-#     cancer_species_bin[which(!direct_matches)[i]] <- accepted_name
-#   } else {
-#     cat(paste("Removing", current_name, "as it doesn't match synonymically.\n"))
-#     cancer_species_bin[which(!direct_matches)[i]] <- NA
-#   }
-# }
+# For the species that aren't direct or close matches, check synonyms
+remaining_indices <- setdiff(1:length(cancer_species_to_check), close_matches[, 2])
+for (i in remaining_indices) {
+  current_name <- cancer_species_to_check[i]
+
+  # Check for synonyms
+  accepted_name <- get_synonyms(current_name)
+
+  if (accepted_name %in% tree_species) {
+    cat(paste("Changing", current_name, "to", accepted_name, "based on accepted name match.\n"))
+    cancer_species_bin[which(!direct_matches)[i]] <- accepted_name
+  } else {
+    cat(paste("Removing", current_name, "as it doesn't match synonymically.\n"))
+    cancer_species_bin[which(!direct_matches)[i]] <- NA
+  }
+}
 
 # Note that every time that the above code fails, rest of the execution shuts so as soon as
 # query is done, run below code
@@ -178,10 +179,6 @@ cancer_species_bin[which(!direct_matches)[close_matches[, 2]]] <- tree_species[c
 cancer_species_bin <- cancer_species_bin[!is.na(cancer_species_bin)]
 names(cancer_species_bin) <- cancer_species_bin
 print(cancer_species_bin)
-
-
-# Export binzarized traitfile for posterior use
-write.csv(cancer_species_bin, file="Out/1.Pruning/cancer_species_traitfile.csv")
 
 ### NOTE THAT SUBSPECIES WERE REMOVED BECAUSE I WAS BECOMING MAD AND THEY ARE NOT RELEVANT TBF
 
@@ -465,7 +462,7 @@ ggsave(filename = "Out/2.Clustering/clustering_family_comparison/cluster_family_
 tree_plot <- ggtree(tree) + theme_tree2()
 
 # Combine the plots
-combined_plot <- tree_plot + heatmap_plot + plot_layout(widths = c(2, 3))
+combined_plot <- tree_plot + heatmap_plot
 
 combined_plot
 
