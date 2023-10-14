@@ -63,6 +63,7 @@ library(dplyr)
 library(viridis)
 library(ggtree)
 library(RColorBrewer)
+library(svglite)
 
 ```
 
@@ -178,6 +179,10 @@ cancer_species_bin <- cancer_species_bin[!is.na(cancer_species_bin)]
 names(cancer_species_bin) <- cancer_species_bin
 print(cancer_species_bin)
 
+
+# Export binzarized traitfile for posterior use
+write.csv(cancer_species_bin, file="Out/1.Pruning/cancer_species_traitfile.csv")
+
 ### NOTE THAT SUBSPECIES WERE REMOVED BECAUSE I WAS BECOMING MAD AND THEY ARE NOT RELEVANT TBF
 
 ```
@@ -185,12 +190,11 @@ print(cancer_species_bin)
 
 ```{r, fig.width=20, fig.height=20}
 
-
 pruned_tree <- treedataMatch(tree=nw_tree,y=cancer_species_bin)
 
 # Rename the variable for posterior ease of use
 tree <- pruned_tree$tree
-write.tree(tree, file="Out/tree_prunning/science.abn7829_data_s4.nex.tree.pruned")
+write.tree(tree, file="Out/1.Pruning/tree_pruning/science.abn7829_data_s4.nex.tree.pruned")
 
 # Check how the two trees compare
 comparePhylo(tree, nw_tree, plot = TRUE, force.rooted = TRUE)
@@ -221,8 +225,8 @@ for (index in seq_along(unique_distances)) {
   # system(echo_command)
     
   # Cut the tree by every possible nodal distance and collect the clusters in separated files for further use
-  output_path <- sprintf("Out/tree_clustering/%d_cut_%f.clusters", index, node)
-  tree_cluster_command <- sprintf("python3 TreeCluster/TreeCluster.py -i Out/tree_prunning/science.abn7829_data_s4.nex.tree.pruned -t %f --method root_dist -s 99 -o %s", node, output_path)
+  output_path <- sprintf("Out/2.Clustering/tree_clustering/%d_cut_%f.clusters", index, node)
+  tree_cluster_command <- sprintf("python3 TreeCluster/TreeCluster.py -i Out/1.Pruning/tree_pruning/science.abn7829_data_s4.nex.tree.pruned -t %f --method root_dist -s 99 -o %s", node, output_path)
   system(tree_cluster_command)
 }
 
@@ -232,7 +236,7 @@ for (index in seq_along(unique_distances)) {
 ```{r}
 
 # Identify all cluster files
-cluster_files <- list.files(path = "Out/tree_clustering/", full.names = TRUE)
+cluster_files <- list.files(path = "Out/2.Clustering/tree_clustering/", full.names = TRUE)
 
 # Function to read and process a single cluster file
 process_cluster_file <- function(file_path) {
@@ -262,7 +266,7 @@ clusters_df <- Reduce(function(x, y) {
 }, list_of_dfs)
 
 # Keep the SPECIES_BINOMIAL column fixed and order the rest
-ordered_columns <- c("SPECIES_BINOMIAL", sort(colnames(clusters_df)[-1]))
+ordered_columns <- c("SPECIES_BINOMIAL", rev(colnames(clusters_df)[-1]))
 
 # Reorder the columns based on the sorted column names
 clusters_df <- clusters_df[, ordered_columns]
@@ -277,6 +281,9 @@ clusters_unique <- cbind(clusters_unique[,1], merged_traits$family, clusters_uni
 
 colnames(clusters_unique)[1] <- "SPECIES_BINOMIAL"
 colnames(clusters_unique)[2] <- "FAMILY"
+
+# Recover the cluster file por posterior use
+write.csv(clusters_unique, file="Out/2.Clustering/traits_clusters_exploration/clusters_unique.csv")
 
 ```
 
@@ -312,14 +319,16 @@ for(species in cancer_species_to_check){
 # Remove genus column
 clusters_unique_expanded$GENUS <- NULL
 
-```
-### Visualicing cluster distribution with species present in the phylogeny and trait values
+# Recover the cluster file por posterior use
+write.csv(clusters_unique_expanded, file="Out/2.Clustering/traits_clusters_exploration/clusters_unique_expanded.csv")
 
-```{r, fig.width=18, fig.height=18, dev = 'png'}
+```
+### Visualizing cluster distribution with species present in the phylogeny and trait values
+
+```{r, fig.width=18, fig.height=18, dev = 'svg'}
 
 # Extracting tip labels order from the phylo object
-ordered_species <- tree$tip.label
-
+ordered_species <- rev(tree$tip.label)
 # Create a new factor with the desired order for SPECIES_BINOMIAL
 clusters_unique$SPECIES_BINOMIAL <- factor(clusters_unique$SPECIES_BINOMIAL, levels = ordered_species)
 
@@ -329,6 +338,10 @@ clusters_long <- clusters_unique %>%
 
 # Add a cut for FAMILY to visualize it alongside the other cuts
 clusters_long <- rbind(clusters_long, data.frame(SPECIES_BINOMIAL = clusters_unique$SPECIES_BINOMIAL, cut = "FAMILY", cluster = as.character(clusters_unique$FAMILY), FAMILY = clusters_unique$FAMILY))
+
+# Reorder the levels of the cut factor to place FAMILY first
+ordered_cuts <- c("FAMILY", sort(unique(clusters_long$cut[clusters_long$cut != "FAMILY"])))
+clusters_long$cut <- factor(clusters_long$cut, levels = ordered_cuts)
 
 
 # Calculate the number of unique cluster values and families
@@ -353,11 +366,11 @@ if(num_families > 8){
 
 
 # Combine the colors and levels
-all_colors <- c(cluster_colors, family_colors)
-all_levels <- unique(c(as.character(clusters_long$cluster), as.character(clusters_unique$FAMILY)))
+all_colors <- c(family_colors, cluster_colors)
+all_levels <- unique(c(as.character(clusters_unique$FAMILY), as.character(clusters_long$cluster)))
 
 # Plot
-ggplot(clusters_long, aes(x = cut, y = SPECIES_BINOMIAL)) +
+heatmap_plot <- ggplot(clusters_long, aes(x = cut, y = SPECIES_BINOMIAL)) +
   geom_tile(aes(fill = cluster), color = "white", linewidth = 0.5) +
   scale_fill_manual(values = setNames(all_colors, all_levels)) +
   scale_x_discrete(expand = c(0,0)) +
@@ -365,17 +378,22 @@ ggplot(clusters_long, aes(x = cut, y = SPECIES_BINOMIAL)) +
   theme_minimal() +
   theme(
     axis.text.x = element_text(angle = 90, size = 14),
-    axis.text.y = element_text(size = 14),
-    axis.title = element_text(size = 16),
+    axis.text.y = element_text(size = 14, hjust = 0.5),
+    axis.title.x = element_text(size = 16, hjust = 0.5, margin = margin(t = 20, b = 10)),
+    axis.title.y = element_text(size = 16, angle = 90,hjust = 0.5, margin = margin(t = 20, b = 10)),
     legend.title = element_text(size = 14),
     legend.text = element_text(size = 12))
+    
+heatmap_plot
+
+ggsave(filename = "Out/2.Clustering/clustering_family_comparison/cluster_family_comp.svg", plot = heatmap_plot, width = 18, height = 18, device = "svg")
 
 ```
 
 
-### Visualicing cluster distribution with species not present in the phylogeny
+### Visualizing cluster distribution with species not present in the phylogeny
 
-```{r, fig.width=18, fig.height=18, dev = 'png'}
+```{r, fig.width=18, fig.height=18, dev = 'svg'}
 
 # Factorice and order by family
 clusters_unique_expanded$FAMILY <- as.factor(sort(clusters_unique_expanded$FAMILY))
@@ -387,6 +405,9 @@ clusters_expanded_long <- clusters_unique_expanded %>%
 # Add a cut for FAMILY to visualize it alongside the other cuts
 clusters_expanded_long <- rbind(clusters_expanded_long, data.frame(SPECIES_BINOMIAL = clusters_unique_expanded$SPECIES_BINOMIAL, cut = "FAMILY", cluster = as.character(clusters_unique_expanded$FAMILY), FAMILY = clusters_unique_expanded$FAMILY))
 
+# Reorder the levels of the cut factor to place FAMILY first
+ordered_cuts <- c("FAMILY", sort(unique(clusters_expanded_long$cut[clusters_expanded_long$cut != "FAMILY"])))
+clusters_expanded_long$cut <- factor(clusters_expanded_long$cut, levels = ordered_cuts)
 
 # Calculate the number of unique cluster values and families
 num_clusters <- length(unique(clusters_expanded_long$cluster))
@@ -414,17 +435,40 @@ all_colors <- c(cluster_colors, family_colors)
 all_levels <- unique(c(as.character(clusters_expanded_long$cluster), as.character(clusters_unique_expanded$FAMILY)))
 
 # Plot
-ggplot(clusters_expanded_long, aes(x = cut, y = SPECIES_BINOMIAL)) +
+heatmap_expanded_plot <- ggplot(clusters_expanded_long, aes(x = cut, y = SPECIES_BINOMIAL)) +
   geom_tile(aes(fill = cluster), color = "white", linewidth = 0.5) +
   scale_fill_manual(values = setNames(all_colors, all_levels)) +
   scale_x_discrete(expand = c(0,0)) +
   labs(y = "Species", x = "Cut & Family", fill = "Value/Group") +
-  theme_minimal() + 
+  theme_minimal() +
   theme(
     axis.text.x = element_text(angle = 90, size = 14),
-    axis.text.y = element_text(size = 14),
-    axis.title = element_text(size = 16),
+    axis.text.y = element_text(size = 14, hjust = 0.5),
+    axis.title.x = element_text(size = 16, hjust = 0.5, margin = margin(t = 20, b = 10)),
+    axis.title.y = element_text(size = 16, angle = 90, hjust = 0.5, margin = margin(t = 20, b = 10)),
     legend.title = element_text(size = 14),
     legend.text = element_text(size = 12))
+    
+print(heatmap_expanded_plot)
+
+ggsave(filename = "Out/2.Clustering/clustering_family_comparison/cluster_family_comp_w_outspecies.svg", plot = heatmap_expanded_plot, width = 18, height = 18, device = "svg")
+
+
+
+```
+
+### Plot together our heatmap with the phylogenetic tree
+
+```{r, fig.width=36, fig.height=18, dev = 'svg'}
+
+# Plot the tree from right to left
+tree_plot <- ggtree(tree) + theme_tree2()
+
+# Combine the plots
+combined_plot <- tree_plot + heatmap_plot + plot_layout(widths = c(2, 3))
+
+combined_plot
+
+ggsave(filename = "Out/2.Clustering/clustering_family_comparison/cluster_family_comp_w_tree.svg", plot = combined_plot, width = 36, height = 18, device = "svg")
 
 ```
