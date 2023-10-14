@@ -1,0 +1,917 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\author{}
+\date{\vspace{-2.5em}}
+
+\begin{document}
+
+\hypertarget{data-preparation}{%
+\section{DATA PREPARATION}\label{data-preparation}}
+
+\hypertarget{primates-neoplasy-project}{%
+\subsubsection{PRIMATES' NEOPLASY
+PROJECT}\label{primates-neoplasy-project}}
+
+\hypertarget{miguel-ramon-alonso}{%
+\subsubsection{MIGUEL RAMON ALONSO}\label{miguel-ramon-alonso}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{knitr}\SpecialCharTok{::}\NormalTok{opts\_knit}\SpecialCharTok{$}\FunctionTok{set}\NormalTok{(}\AttributeTok{root.dir =} \StringTok{"/home/rstudio/NEOPLASY\_PRIMATES"}\NormalTok{)}
+\NormalTok{knitr}\SpecialCharTok{::}\NormalTok{opts\_chunk}\SpecialCharTok{$}\FunctionTok{set}\NormalTok{(}\AttributeTok{engine.path =} \FunctionTok{list}\NormalTok{(}
+\AttributeTok{python =} \StringTok{\textquotesingle{}/home/rstudio/NEOPLASY\_PRIMATES/TreeCluster/venv/bin/python\textquotesingle{}}\NormalTok{))}
+\FunctionTok{getwd}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "/home/rstudio/NEOPLASY_PRIMATES"
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{getwd}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "/home/rstudio/NEOPLASY_PRIMATES"
+\end{verbatim}
+
+\hypertarget{seed-and-library-loading}{%
+\subsubsection{Seed and library
+loading}\label{seed-and-library-loading}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{set.seed}\NormalTok{(}\DecValTok{1998}\NormalTok{)}
+
+\CommentTok{\# General use libraries}
+\FunctionTok{library}\NormalTok{(ape)}
+\FunctionTok{library}\NormalTok{(RRphylo)}
+\FunctionTok{library}\NormalTok{(phytools)}
+\FunctionTok{library}\NormalTok{(reticulate)}
+
+\CommentTok{\# Non{-}concordant species retrieval }
+\FunctionTok{library}\NormalTok{(stringdist)}
+\FunctionTok{library}\NormalTok{(taxize)}
+\FunctionTok{library}\NormalTok{(R.utils)}
+
+\CommentTok{\# Sort distances chunk}
+\FunctionTok{library}\NormalTok{(adephylo)}
+\FunctionTok{library}\NormalTok{(castor)}
+
+\CommentTok{\# Cluster merging}
+\FunctionTok{library}\NormalTok{(dplyr)}
+
+\CommentTok{\# Plotting}
+\FunctionTok{library}\NormalTok{(ggplot2)}
+\FunctionTok{library}\NormalTok{(tidyr)}
+\FunctionTok{library}\NormalTok{(dplyr)}
+\FunctionTok{library}\NormalTok{(viridis)}
+\FunctionTok{library}\NormalTok{(ggtree)}
+\FunctionTok{library}\NormalTok{(RColorBrewer)}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{tree-import}{%
+\subsubsection{Tree import}\label{tree-import}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{nw\_tree }\OtherTok{\textless{}{-}} \FunctionTok{read.newick}\NormalTok{(}\StringTok{"Data/233{-}GENOMES/science.abn7829\_data\_s4.nex.tree"}\NormalTok{)}
+
+\CommentTok{\# Give a name to species name attribute}
+\NormalTok{tree\_species }\OtherTok{\textless{}{-}}\NormalTok{ nw\_tree}\SpecialCharTok{$}\NormalTok{tip.label}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{cancer-traitfile-import}{%
+\subsubsection{Cancer traitfile import}\label{cancer-traitfile-import}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{cancer\_traits }\OtherTok{\textless{}{-}} \FunctionTok{read.csv}\NormalTok{(}\StringTok{"Data/Neoplasia/species360\_primates\_neoplasia\_20230519.csv"}\NormalTok{, }\AttributeTok{sep =} \StringTok{","}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{cancer-trait-file-polishing}{%
+\subsubsection{Cancer trait file
+polishing}\label{cancer-trait-file-polishing}}
+
+\hypertarget{remove-spaces-at-the-end-work-out-name-dissimilarities-and-stuff-like-that}{%
+\paragraph{Remove spaces at the end, work out name dissimilarities and
+stuff like
+that}\label{remove-spaces-at-the-end-work-out-name-dissimilarities-and-stuff-like-that}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Remove any whitespaces at the end of the cells}
+\NormalTok{cancer\_traits[] }\OtherTok{\textless{}{-}} \FunctionTok{lapply}\NormalTok{(cancer\_traits, }\ControlFlowTok{function}\NormalTok{(col) }\FunctionTok{trimws}\NormalTok{(col))}
+
+\CommentTok{\# Binarize species name for standarization}
+\NormalTok{cancer\_traits}\SpecialCharTok{$}\NormalTok{SPECIES\_BINOMIAL }\OtherTok{\textless{}{-}} \FunctionTok{gsub}\NormalTok{(}\StringTok{" "}\NormalTok{, }\StringTok{"\_"}\NormalTok{, cancer\_traits}\SpecialCharTok{$}\NormalTok{species)}
+
+\CommentTok{\# Need to name the object to work wit it (not sure why)}
+\NormalTok{cancer\_species\_bin }\OtherTok{\textless{}{-}}\NormalTok{ cancer\_traits}\SpecialCharTok{$}\NormalTok{SPECIES\_BINOMIAL }
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{dissimilarities-between-the-two-namesets-tree-and-traits}{%
+\paragraph{Dissimilarities between the two namesets (tree and
+traits)}\label{dissimilarities-between-the-two-namesets-tree-and-traits}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Function to retrieve synonyms for a species from ITIS}
+\CommentTok{\# Simplified Function to retrieve accepted name for a species from ITIS}
+\NormalTok{get\_synonyms }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(species\_name) \{}
+\NormalTok{  retry }\OtherTok{\textless{}{-}} \ConstantTok{TRUE}
+\NormalTok{  retries }\OtherTok{\textless{}{-}} \DecValTok{0}
+\NormalTok{  max\_retries }\OtherTok{\textless{}{-}} \DecValTok{15}  \CommentTok{\# Set a maximum number of retries to avoid an infinite loop}
+\NormalTok{  syns }\OtherTok{\textless{}{-}} \ConstantTok{NULL}
+  
+  \ControlFlowTok{while}\NormalTok{ (retry }\SpecialCharTok{\&\&}\NormalTok{ retries }\SpecialCharTok{\textless{}}\NormalTok{ max\_retries) \{}
+    \FunctionTok{try}\NormalTok{(}
+      \CommentTok{\# Set a 10{-}second timeout for the synonyms query}
+      \FunctionTok{withTimeout}\NormalTok{(\{}
+\NormalTok{        syns }\OtherTok{\textless{}{-}} \FunctionTok{synonyms}\NormalTok{(species\_name, }\AttributeTok{db =} \StringTok{"itis"}\NormalTok{, }\AttributeTok{rows =} \DecValTok{1}\NormalTok{)}
+\NormalTok{      \}, }\AttributeTok{timeout =} \DecValTok{10}\NormalTok{),}
+      \AttributeTok{silent =} \ConstantTok{TRUE}
+\NormalTok{    )}
+    
+    \CommentTok{\# Check if the query succeeded or timed out}
+    \ControlFlowTok{if}\NormalTok{ (}\SpecialCharTok{!}\FunctionTok{is.null}\NormalTok{(syns) }\SpecialCharTok{\&\&} \FunctionTok{length}\NormalTok{(syns) }\SpecialCharTok{\textgreater{}} \DecValTok{0}\NormalTok{) \{}
+\NormalTok{      retry }\OtherTok{\textless{}{-}} \ConstantTok{FALSE}  \CommentTok{\# Query succeeded, so exit the loop}
+\NormalTok{    \} }\ControlFlowTok{else}\NormalTok{ \{}
+      \FunctionTok{Sys.sleep}\NormalTok{(}\DecValTok{5}\NormalTok{)  }\CommentTok{\# Wait 5 seconds before retrying}
+\NormalTok{      retries }\OtherTok{\textless{}{-}}\NormalTok{ retries }\SpecialCharTok{+} \DecValTok{1}
+\NormalTok{    \}}
+\NormalTok{  \}}
+  
+  \FunctionTok{return}\NormalTok{(syns)}
+\NormalTok{\}}
+
+
+
+\CommentTok{\# Identify species that are directly present in the tree}
+\NormalTok{direct\_matches }\OtherTok{\textless{}{-}}\NormalTok{ cancer\_species\_bin }\SpecialCharTok{\%in\%}\NormalTok{ tree\_species}
+\NormalTok{cancer\_species\_to\_check }\OtherTok{\textless{}{-}}\NormalTok{ cancer\_species\_bin[}\SpecialCharTok{!}\NormalTok{direct\_matches]}
+
+\CommentTok{\# Remove subspecies information from cancer\_species\_to\_check}
+\NormalTok{cancer\_species\_to\_check }\OtherTok{\textless{}{-}} \FunctionTok{sapply}\NormalTok{(}\FunctionTok{strsplit}\NormalTok{(cancer\_species\_to\_check, }\StringTok{"\_"}\NormalTok{), }\ControlFlowTok{function}\NormalTok{(x) \{}
+  \FunctionTok{paste}\NormalTok{(x[}\DecValTok{1}\SpecialCharTok{:}\DecValTok{2}\NormalTok{], }\AttributeTok{collapse =} \StringTok{"\_"}\NormalTok{)}
+\NormalTok{\})}
+
+
+\CommentTok{\# Check for close string matches}
+\NormalTok{dist\_matrix }\OtherTok{\textless{}{-}}\NormalTok{ stringdist}\SpecialCharTok{::}\FunctionTok{stringdistmatrix}\NormalTok{(tree\_species, cancer\_species\_to\_check, }\AttributeTok{method =} \StringTok{"lv"}\NormalTok{)}
+\NormalTok{threshold }\OtherTok{\textless{}{-}} \DecValTok{2}
+\NormalTok{close\_matches }\OtherTok{\textless{}{-}} \FunctionTok{which}\NormalTok{(dist\_matrix }\SpecialCharTok{\textless{}=}\NormalTok{ threshold, }\AttributeTok{arr.ind =} \ConstantTok{TRUE}\NormalTok{)}
+\NormalTok{cancer\_species\_bin[}\FunctionTok{which}\NormalTok{(}\SpecialCharTok{!}\NormalTok{direct\_matches)[close\_matches[, }\DecValTok{2}\NormalTok{]]] }\OtherTok{\textless{}{-}}\NormalTok{ tree\_species[close\_matches[, }\DecValTok{1}\NormalTok{]]}
+
+\CommentTok{\# For the species that aren\textquotesingle{}t direct or close matches, check synonyms}
+\NormalTok{remaining\_indices }\OtherTok{\textless{}{-}} \FunctionTok{setdiff}\NormalTok{(}\DecValTok{1}\SpecialCharTok{:}\FunctionTok{length}\NormalTok{(cancer\_species\_to\_check), close\_matches[, }\DecValTok{2}\NormalTok{])}
+\ControlFlowTok{for}\NormalTok{ (i }\ControlFlowTok{in}\NormalTok{ remaining\_indices) \{}
+\NormalTok{  current\_name }\OtherTok{\textless{}{-}}\NormalTok{ cancer\_species\_to\_check[i]}
+  
+  \CommentTok{\# Check for synonyms}
+\NormalTok{  accepted\_name }\OtherTok{\textless{}{-}} \FunctionTok{get\_synonyms}\NormalTok{(current\_name)}
+  
+  \ControlFlowTok{if}\NormalTok{ (accepted\_name }\SpecialCharTok{\%in\%}\NormalTok{ tree\_species) \{}
+    \FunctionTok{cat}\NormalTok{(}\FunctionTok{paste}\NormalTok{(}\StringTok{"Changing"}\NormalTok{, current\_name, }\StringTok{"to"}\NormalTok{, accepted\_name, }\StringTok{"based on accepted name match.}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{))}
+\NormalTok{    cancer\_species\_bin[}\FunctionTok{which}\NormalTok{(}\SpecialCharTok{!}\NormalTok{direct\_matches)[i]] }\OtherTok{\textless{}{-}}\NormalTok{ accepted\_name}
+\NormalTok{  \} }\ControlFlowTok{else}\NormalTok{ \{}
+    \FunctionTok{cat}\NormalTok{(}\FunctionTok{paste}\NormalTok{(}\StringTok{"Removing"}\NormalTok{, current\_name, }\StringTok{"as it doesn\textquotesingle{}t match synonymically.}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{))}
+\NormalTok{    cancer\_species\_bin[}\FunctionTok{which}\NormalTok{(}\SpecialCharTok{!}\NormalTok{direct\_matches)[i]] }\OtherTok{\textless{}{-}} \ConstantTok{NA}
+\NormalTok{  \}}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## ==  1 queries  ===============
+\end{verbatim}
+
+\begin{verbatim}
+## 
+## Retrieving data for taxon 'Ateles_fusciceps'
+\end{verbatim}
+
+\begin{verbatim}
+## ✔  Found:  Ateles_fusciceps
+## ==  Results  =================
+## 
+## • Total: 1 
+## • Found: 1 
+## • Not Found: 0
+## ==  1 queries  ===============
+\end{verbatim}
+
+\begin{verbatim}
+## 
+## Retrieving data for taxon 'Ateles_fusciceps'
+\end{verbatim}
+
+\begin{verbatim}
+## ✔  Found:  Ateles_fusciceps
+## ==  Results  =================
+## 
+## • Total: 1 
+## • Found: 1 
+## • Not Found: 0
+## Removing Ateles_fusciceps as it doesn't match synonymically.
+## ==  1 queries  ===============
+\end{verbatim}
+
+\begin{verbatim}
+## 
+## Retrieving data for taxon 'Cebus_capucinus'
+\end{verbatim}
+
+\begin{verbatim}
+## ✔  Found:  Cebus_capucinus
+## ==  Results  =================
+## 
+## • Total: 1 
+## • Found: 1 
+## • Not Found: 0
+## ==  1 queries  ===============
+\end{verbatim}
+
+\begin{verbatim}
+## 
+## Retrieving data for taxon 'Cebus_capucinus'
+\end{verbatim}
+
+\begin{verbatim}
+## ✔  Found:  Cebus_capucinus
+## ==  Results  =================
+## 
+## • Total: 1 
+## • Found: 1 
+## • Not Found: 0
+## ==  1 queries  ===============
+\end{verbatim}
+
+\begin{verbatim}
+## 
+## Retrieving data for taxon 'Cebus_capucinus'
+\end{verbatim}
+
+\begin{verbatim}
+## ==  1 queries  ===============
+\end{verbatim}
+
+\begin{verbatim}
+## 
+## Retrieving data for taxon 'Cebus_capucinus'
+\end{verbatim}
+
+\begin{verbatim}
+## ==  1 queries  ===============
+\end{verbatim}
+
+\begin{verbatim}
+## 
+## Retrieving data for taxon 'Cebus_capucinus'
+\end{verbatim}
+
+\begin{verbatim}
+## ✔  Found:  Cebus_capucinus
+## ==  Results  =================
+## 
+## • Total: 1 
+## • Found: 1 
+## • Not Found: 0
+## Removing Cebus_capucinus as it doesn't match synonymically.
+## ==  1 queries  ===============
+\end{verbatim}
+
+\begin{verbatim}
+## 
+## Retrieving data for taxon 'Macaca_sylvanus'
+\end{verbatim}
+
+\begin{verbatim}
+## ==  1 queries  ===============
+\end{verbatim}
+
+\begin{verbatim}
+## 
+## Retrieving data for taxon 'Macaca_sylvanus'
+\end{verbatim}
+
+\begin{verbatim}
+## ✔  Found:  Macaca_sylvanus
+## ==  Results  =================
+## 
+## • Total: 1 
+## • Found: 1 
+## • Not Found: 0
+## Removing Macaca_sylvanus as it doesn't match synonymically.
+## ==  1 queries  ===============
+\end{verbatim}
+
+\begin{verbatim}
+## 
+## Retrieving data for taxon 'Nomascus_leucogenys'
+\end{verbatim}
+
+\begin{verbatim}
+## ✔  Found:  Nomascus_leucogenys
+## ==  Results  =================
+## 
+## • Total: 1 
+## • Found: 1 
+## • Not Found: 0
+## Removing Nomascus_leucogenys as it doesn't match synonymically.
+## ==  1 queries  ===============
+\end{verbatim}
+
+\begin{verbatim}
+## 
+## Retrieving data for taxon 'Pithecia_pithecia'
+\end{verbatim}
+
+\begin{verbatim}
+## ✔  Found:  Pithecia_pithecia
+## ==  Results  =================
+## 
+## • Total: 1 
+## • Found: 1 
+## • Not Found: 0
+## Removing Pithecia_pithecia as it doesn't match synonymically.
+## ==  1 queries  ===============
+\end{verbatim}
+
+\begin{verbatim}
+## 
+## Retrieving data for taxon 'Plecturocebus_donacophilus'
+\end{verbatim}
+
+\begin{verbatim}
+## ✔  Found:  Plecturocebus_donacophilus
+## ==  Results  =================
+## 
+## • Total: 1 
+## • Found: 1 
+## • Not Found: 0
+## Removing Plecturocebus_donacophilus as it doesn't match synonymically.
+## ==  1 queries  ===============
+\end{verbatim}
+
+\begin{verbatim}
+## 
+## Retrieving data for taxon 'Saguinus_leucopus'
+\end{verbatim}
+
+\begin{verbatim}
+## ==  1 queries  ===============
+\end{verbatim}
+
+\begin{verbatim}
+## 
+## Retrieving data for taxon 'Saguinus_leucopus'
+\end{verbatim}
+
+\begin{verbatim}
+## ✔  Found:  Saguinus_leucopus
+## ==  Results  =================
+## 
+## • Total: 1 
+## • Found: 1 
+## • Not Found: 0
+\end{verbatim}
+
+\begin{verbatim}
+## Accepted name(s) is/are 'Oedipomidas leucopus'
+\end{verbatim}
+
+\begin{verbatim}
+## Using tsn(s) 1207739
+\end{verbatim}
+
+\begin{verbatim}
+## Removing Saguinus_leucopus as it doesn't match synonymically.
+## ==  1 queries  ===============
+\end{verbatim}
+
+\begin{verbatim}
+## 
+## Retrieving data for taxon 'Saimiri_boliviensis'
+\end{verbatim}
+
+\begin{verbatim}
+## ✔  Found:  Saimiri_boliviensis
+## ==  Results  =================
+## 
+## • Total: 1 
+## • Found: 1 
+## • Not Found: 0
+## ==  1 queries  ===============
+\end{verbatim}
+
+\begin{verbatim}
+## 
+## Retrieving data for taxon 'Saimiri_boliviensis'
+\end{verbatim}
+
+\begin{verbatim}
+## ✔  Found:  Saimiri_boliviensis
+## ==  Results  =================
+## 
+## • Total: 1 
+## • Found: 1 
+## • Not Found: 0
+## Removing Saimiri_boliviensis as it doesn't match synonymically.
+## ==  1 queries  ===============
+\end{verbatim}
+
+\begin{verbatim}
+## 
+## Retrieving data for taxon 'Symphalangus_syndactylus'
+\end{verbatim}
+
+\begin{verbatim}
+## ✔  Found:  Symphalangus_syndactylus
+## ==  Results  =================
+## 
+## • Total: 1 
+## • Found: 1 
+## • Not Found: 0
+## Removing Symphalangus_syndactylus as it doesn't match synonymically.
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Note that every time that the above code fails, rest of the execution shuts so as soon as}
+\CommentTok{\# query is done, run below code}
+
+\CommentTok{\# Filter out NAs}
+\NormalTok{cancer\_species\_bin }\OtherTok{\textless{}{-}}\NormalTok{ cancer\_species\_bin[}\SpecialCharTok{!}\FunctionTok{is.na}\NormalTok{(cancer\_species\_bin)]}
+\FunctionTok{names}\NormalTok{(cancer\_species\_bin) }\OtherTok{\textless{}{-}}\NormalTok{ cancer\_species\_bin}
+\FunctionTok{print}\NormalTok{(cancer\_species\_bin)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##              Alouatta_caraya           Aotus_griseimembra 
+##            "Alouatta_caraya"         "Aotus_griseimembra" 
+##             Ateles_geoffroyi            Callimico_goeldii 
+##           "Ateles_geoffroyi"          "Callimico_goeldii" 
+##         Callithrix_geoffroyi           Callithrix_jacchus 
+##       "Callithrix_geoffroyi"         "Callithrix_jacchus" 
+##             Cebuella_pygmaea      Cercopithecus_neglectus 
+##           "Cebuella_pygmaea"    "Cercopithecus_neglectus" 
+##          Cheirogaleus_medius              Colobus_guereza 
+##        "Cheirogaleus_medius"            "Colobus_guereza" 
+##           Erythrocebus_patas            Eulemur_coronatus 
+##         "Erythrocebus_patas"          "Eulemur_coronatus" 
+##               Eulemur_macaco               Eulemur_mongoz 
+##             "Eulemur_macaco"             "Eulemur_mongoz" 
+##                Galago_moholi          Galago_senegalensis 
+##              "Galago_moholi"        "Galago_senegalensis" 
+##              Gorilla_gorilla                Hylobates_lar 
+##            "Gorilla_gorilla"              "Hylobates_lar" 
+##                  Lemur_catta      Leontocebus_fuscicollis 
+##                "Lemur_catta"    "Leontocebus_fuscicollis" 
+##   Leontopithecus_chrysomelas       Leontopithecus_rosalia 
+## "Leontopithecus_chrysomelas"     "Leontopithecus_rosalia" 
+##          Macaca_fascicularis               Macaca_fuscata 
+##        "Macaca_fascicularis"             "Macaca_fuscata" 
+##               Macaca_mulatta                 Macaca_nigra 
+##             "Macaca_mulatta"               "Macaca_nigra" 
+##               Macaca_silenus            Mandrillus_sphinx 
+##             "Macaca_silenus"          "Mandrillus_sphinx" 
+##              Mico_argentatus           Microcebus_murinus 
+##            "Mico_argentatus"         "Microcebus_murinus" 
+##             Nasalis_larvatus           Nycticebus_coucang 
+##           "Nasalis_larvatus"         "Nycticebus_coucang" 
+##          Nycticebus_pygmaeus              Pan_troglodytes 
+##        "Nycticebus_pygmaeus"            "Pan_troglodytes" 
+##              Papio_hamadryas                 Pongo_abelii 
+##            "Papio_hamadryas"               "Pongo_abelii" 
+##               Pongo_pygmaeus        Propithecus_coquereli 
+##             "Pongo_pygmaeus"      "Propithecus_coquereli" 
+##             Saguinus_bicolor           Saguinus_geoffroyi 
+##           "Saguinus_bicolor"         "Saguinus_geoffroyi" 
+##           Saguinus_imperator               Saguinus_midas 
+##         "Saguinus_imperator"             "Saguinus_midas" 
+##              Saguinus_mystax             Saguinus_oedipus 
+##            "Saguinus_mystax"           "Saguinus_oedipus" 
+##             Saimiri_sciureus               Sapajus_apella 
+##           "Saimiri_sciureus"             "Sapajus_apella" 
+##         Theropithecus_gelada       Trachypithecus_auratus 
+##       "Theropithecus_gelada"     "Trachypithecus_auratus" 
+##     Trachypithecus_cristatus     Trachypithecus_francoisi 
+##   "Trachypithecus_cristatus"   "Trachypithecus_francoisi" 
+##      Trachypithecus_obscurus                Varecia_rubra 
+##    "Trachypithecus_obscurus"              "Varecia_rubra" 
+##            Varecia_variegata 
+##          "Varecia_variegata"
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\DocumentationTok{\#\#\# }\AlertTok{NOTE}\DocumentationTok{ THAT SUBSPECIES WERE REMOVED BECAUSE I WAS BECOMING MAD AND THEY ARE NOT RELEVANT TBF}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{tree-prunning}{%
+\paragraph{Tree prunning}\label{tree-prunning}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{pruned\_tree }\OtherTok{\textless{}{-}} \FunctionTok{treedataMatch}\NormalTok{(}\AttributeTok{tree=}\NormalTok{nw\_tree,}\AttributeTok{y=}\NormalTok{cancer\_species\_bin)}
+
+\CommentTok{\# Rename the variable for posterior ease of use}
+\NormalTok{tree }\OtherTok{\textless{}{-}}\NormalTok{ pruned\_tree}\SpecialCharTok{$}\NormalTok{tree}
+\FunctionTok{write.tree}\NormalTok{(tree, }\AttributeTok{file=}\StringTok{"Out/tree\_prunning/science.abn7829\_data\_s4.nex.tree.pruned"}\NormalTok{)}
+
+\CommentTok{\# Check how the two trees compare}
+\FunctionTok{comparePhylo}\NormalTok{(tree, nw\_tree, }\AttributeTok{plot =} \ConstantTok{TRUE}\NormalTok{, }\AttributeTok{force.rooted =} \ConstantTok{TRUE}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{data_preparation_files/figure-latex/unnamed-chunk-6-1.pdf}
+
+\begin{verbatim}
+## => Comparing tree with nw_tree.
+## Trees have different numbers of tips: 53 and 236.
+## Tips in nw_tree not in tree : Tupaia_belangeri, Galeopterus_variegatus, Aotus_azarae, Aotus_trivirgatus, Aotus_vociferans, Cebuella_niveiventris, Callibella_humilis, Mico_humeralifer, Mico_spnv, Callithrix_kuhlii, Saguinus_inustus, Saguinus_labiatus, Leontocebus_nigricollis, Leontocebus_illigeri, Cebus_olivaceus, Cebus_unicolor, Cebus_albifrons, Sapajus_macrocephalus, Saimiri_oerstedii, Saimiri_ustus, Saimiri_cassiquiarensis, Saimiri_macrodon, Alouatta_palliata, Alouatta_puruensis, Alouatta_juara, Alouatta_seniculus, Alouatta_nigerrima, Alouatta_macconnelli, Alouatta_belzebul, Alouatta_discolor, Lagothrix_lagothricha, Ateles_paniscus, Ateles_belzebuth, Ateles_marginatus, Ateles_chamek, Cacajao_calvus, Cacajao_melanocephalus, Cacajao_hosomi, Cacajao_ayresi, Chiropotes_albinasus, Chiropotes_sagulatus, Chiropotes_israelita, Pithecia_chrysocephala, Pithecia_albicans, Pithecia_hirsuta, Pithecia_mittermeieri, Pithecia_vanzolinii, Pithecia_pissinattii, Plecturocebus_caligatus, Plecturocebus_brunneus, Plecturocebus_cupreus, Plecturocebus_dubius, Plecturocebus_bernhardi, Plecturocebus_grovesi, Plecturocebus_moloch, Plecturocebus_hoffmansi, Plecturocebus_miltoni, Plecturocebus_cinerascens, Cheracebus_lugens, Cheracebus_lucifer, Cheracebus_torquatus, Cheracebus_regulus, Macaca_assamensis, Macaca_arctoides, Macaca_radiata, Macaca_thibetana, Macaca_cyclopis, Macaca_siberu, Macaca_nemestrina, Macaca_leonina, Macaca_tonkeana, Macaca_maura, Lophocebus_aterrimus, Papio_anubis, Papio_papio, Papio_cynocephalus, Papio_ursinus, Papio_kindae, Mandrillus_leucophaeus, Cercocebus_chrysogaster, Cercocebus_lunulatus, Cercocebus_torquatus, Miopithecus_ogouensis, Cercopithecus_hamlyni, Cercopithecus_nictitans, Cercopithecus_mitis, Cercopithecus_petaurista, Cercopithecus_cephus, Cercopithecus_ascanius, Cercopithecus_pogonias, Cercopithecus_lowei, Cercopithecus_mona, Cercopithecus_diana, Cercopithecus_roloway, Allenopithecus_nigroviridis, Chlorocebus_pygerythrus, Allochrocebus_solatus, Allochrocebus_preussi, Allochrocebus_lhoesti, Trachypithecus_germaini, Trachypithecus_leucocephalus, Trachypithecus_hatinhensis, Trachypithecus_laotum, Trachypithecus_crepusculus, Trachypithecus_phayrei, Trachypithecus_melamera, Trachypithecus_geei, Trachypithecus_pileatus, Semnopithecus_vetulus, Semnopithecus_johnii, Semnopithecus_entellus, Semnopithecus_schistaceus, Semnopithecus_priam, Semnopithecus_hypoleucos, Pygathrix_nigripes, Pygathrix_nemaeus, Pygathrix_cinerea, Rhinopithecus_bieti, Rhinopithecus_roxellana, Presbytis_mitrata, Presbytis_comata, Piliocolobus_badius, Piliocolobus_tephrosceles, Piliocolobus_gordonorum, Piliocolobus_kirkii, Colobus_angolensis, Colobus_polykomos, Homo_sapiens, Pan_paniscus, Gorilla_beringei, Hoolock_hoolock, Hylobates_klossii, Hylobates_agilis, Hylobates_muelleri, Hylobates_abbotti, Nomascus_concolor, Nomascus_siki, Nomascus_gabriellae, Nomascus_annamensis, Tarsius_lariang, Tarsius_wallacei, Cephalopachus_bancanus, Carlito_syrichta, Daubentonia_madagascariensis, Eulemur_rubriventer, Eulemur_albifrons, Eulemur_sanfordi, Eulemur_fulvus, Eulemur_rufus, Eulemur_collaris, Eulemur_flavifrons, Prolemur_simus, Hapalemur_occidentalis, Hapalemur_alaotrensis, Hapalemur_gilberti, Hapalemur_griseus, Hapalemur_meridionalis, Indri_indri, Avahi_laniger, Avahi_peyrierasi, Propithecus_coronatus, Propithecus_tattersalli, Propithecus_verreauxi, Propithecus_edwardsi, Propithecus_diadema, Propithecus_perrieri, Cheirogaleus_major, Mirza_zaza, Lepilemur_ruficaudatus, Lepilemur_dorsalis, Lepilemur_septentrionalis, Lepilemur_ankaranensis, Nycticebus_bengalensis, Loris_lydekkerianus, Loris_tardigradus, Arctocebus_calabarensis, Perodicticus_ibeanus, Perodicticus_potto, Galagoides_demidoff, Otolemur_crassicaudatus, Otolemur_garnettii, Mus_musculus, Oryctolagus_cuniculus.
+## Trees have different numbers of nodes: 52 and 235.
+## Both trees are rooted.
+## Both trees are ultrametric.
+## 44 clades in tree not in nw_tree.
+## 227 clades in nw_tree not in tree.
+## Branching times of clades in common between both trees: see ..$BT
+## (node number in parentheses).
+## 
+## $BT
+##                     tree                 nw_tree
+## 1 0.728006445700004 (65) 0.728006434700006 (261)
+## 2  3.25095038290001 (68)  3.25095037190002 (264)
+## 3 0.541204418900008 (69) 0.541204407900011 (265)
+## 4  1.52810728990001 (70)  1.52810727890002 (266)
+## 5 0.330008522299998 (89) 0.330008511299994 (377)
+## 6       1.551334658 (93)       1.551334647 (408)
+## 7      1.907136741 (100)  1.90713672999999 (441)
+## 8      1.121762388 (105)       1.121762377 (469)
+\end{verbatim}
+
+\hypertarget{clustering-by-branch-depth}{%
+\subsubsection{Clustering by branch
+depth}\label{clustering-by-branch-depth}}
+
+\hypertarget{revised-to-do-the-exploration-node-wise}{%
+\subparagraph{Revised to do the exploration
+node-wise}\label{revised-to-do-the-exploration-node-wise}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Get distances from all nodes to root}
+\NormalTok{sorted\_distances }\OtherTok{\textless{}{-}} \FunctionTok{sort}\NormalTok{(}\FunctionTok{get\_all\_distances\_to\_root}\NormalTok{(tree))}
+
+\CommentTok{\# Identify duplicates rounded to 5 decimal places (for significance)}
+\NormalTok{duplicates }\OtherTok{\textless{}{-}} \FunctionTok{duplicated}\NormalTok{(}\FunctionTok{round}\NormalTok{(}\FunctionTok{unlist}\NormalTok{(sorted\_distances), }\DecValTok{5}\NormalTok{))}
+
+\CommentTok{\# Remove duplicates}
+\NormalTok{unique\_distances }\OtherTok{\textless{}{-}}\NormalTok{ sorted\_distances[}\SpecialCharTok{!}\NormalTok{duplicates]}
+
+\CommentTok{\# Cut the tree using TreeCluster (bash)}
+\ControlFlowTok{for}\NormalTok{ (index }\ControlFlowTok{in} \FunctionTok{seq\_along}\NormalTok{(unique\_distances)) \{}
+\NormalTok{  node }\OtherTok{\textless{}{-}}\NormalTok{ unique\_distances[[index]]}
+  
+  \CommentTok{\# Visualice the node}
+\NormalTok{  echo\_command }\OtherTok{\textless{}{-}} \FunctionTok{sprintf}\NormalTok{(}\StringTok{"echo \%f"}\NormalTok{, node)}
+  \FunctionTok{system}\NormalTok{(echo\_command)}
+    
+  \CommentTok{\# Cut the tree by every possible nodal distance and collect the clusters in separated files for further use}
+\NormalTok{  output\_path }\OtherTok{\textless{}{-}} \FunctionTok{sprintf}\NormalTok{(}\StringTok{"Out/tree\_clustering/\%d\_cut\_\%f.clusters"}\NormalTok{, index, node)}
+\NormalTok{  tree\_cluster\_command }\OtherTok{\textless{}{-}} \FunctionTok{sprintf}\NormalTok{(}\StringTok{"python3 TreeCluster/TreeCluster.py {-}i Out/tree\_prunning/science.abn7829\_data\_s4.nex.tree.pruned {-}t \%f {-}{-}method leaf\_dist\_max {-}v {-}o \%s"}\NormalTok{, node, output\_path)}
+  \FunctionTok{system}\NormalTok{(tree\_cluster\_command)}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{now-lets-merge-all-the-clusters-into-a-single-dataframe-including-also-the-families}{%
+\subsubsection{Now lets merge all the clusters into a single dataframe,
+including also the
+families}\label{now-lets-merge-all-the-clusters-into-a-single-dataframe-including-also-the-families}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Identify all cluster files}
+\NormalTok{cluster\_files }\OtherTok{\textless{}{-}} \FunctionTok{list.files}\NormalTok{(}\AttributeTok{path =} \StringTok{"Out/tree\_clustering/"}\NormalTok{, }\AttributeTok{full.names =} \ConstantTok{TRUE}\NormalTok{)}
+
+\CommentTok{\# Function to read and process a single cluster file}
+\NormalTok{process\_cluster\_file }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(file\_path) \{}
+  \CommentTok{\# Extract just the filename without the extension}
+\NormalTok{  filename\_no\_ext }\OtherTok{\textless{}{-}}\NormalTok{ tools}\SpecialCharTok{::}\FunctionTok{file\_path\_sans\_ext}\NormalTok{(}\FunctionTok{basename}\NormalTok{(file\_path))}
+  
+  \CommentTok{\# Extract the desired portion for the header by splitting on \textquotesingle{}\_\textquotesingle{}}
+\NormalTok{  components }\OtherTok{\textless{}{-}} \FunctionTok{strsplit}\NormalTok{(filename\_no\_ext, }\StringTok{"\_"}\NormalTok{)[[}\DecValTok{1}\NormalTok{]]}
+\NormalTok{  cut\_point }\OtherTok{\textless{}{-}} \FunctionTok{paste0}\NormalTok{(components[}\FunctionTok{length}\NormalTok{(components) }\SpecialCharTok{{-}} \DecValTok{1}\NormalTok{], }\StringTok{"\_"}\NormalTok{, }\FunctionTok{tail}\NormalTok{(components, }\DecValTok{1}\NormalTok{))}
+  
+  \CommentTok{\# Read the file into a dataframe}
+\NormalTok{  df }\OtherTok{\textless{}{-}} \FunctionTok{read.csv}\NormalTok{(file\_path, }\AttributeTok{sep =} \StringTok{"}\SpecialCharTok{\textbackslash{}t}\StringTok{"}\NormalTok{, }\AttributeTok{stringsAsFactors =} \ConstantTok{FALSE}\NormalTok{)}
+  
+  \CommentTok{\# Rename columns}
+  \FunctionTok{colnames}\NormalTok{(df)[}\FunctionTok{colnames}\NormalTok{(df) }\SpecialCharTok{==} \StringTok{"SequenceName"}\NormalTok{] }\OtherTok{\textless{}{-}} \StringTok{"SPECIES\_BINOMIAL"}
+  \FunctionTok{colnames}\NormalTok{(df)[}\FunctionTok{colnames}\NormalTok{(df) }\SpecialCharTok{==} \StringTok{"ClusterNumber"}\NormalTok{] }\OtherTok{\textless{}{-}}\NormalTok{ cut\_point}
+  
+  \FunctionTok{return}\NormalTok{(df)}
+\NormalTok{\}}
+
+\CommentTok{\# Process all cluster files}
+\NormalTok{list\_of\_dfs }\OtherTok{\textless{}{-}} \FunctionTok{lapply}\NormalTok{(cluster\_files, process\_cluster\_file)}
+
+\CommentTok{\# Merge all data frames by SequenceName}
+\NormalTok{clusters\_df }\OtherTok{\textless{}{-}} \FunctionTok{Reduce}\NormalTok{(}\ControlFlowTok{function}\NormalTok{(x, y) \{}
+  \FunctionTok{merge}\NormalTok{(x, y, }\AttributeTok{by =} \StringTok{"SPECIES\_BINOMIAL"}\NormalTok{, }\AttributeTok{all.y =} \ConstantTok{TRUE}\NormalTok{, }\AttributeTok{no.dups =} \ConstantTok{TRUE}\NormalTok{)}
+\NormalTok{\}, list\_of\_dfs)}
+
+\CommentTok{\# Keep the SPECIES\_BINOMIAL column fixed and order the rest}
+\NormalTok{ordered\_columns }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\StringTok{"SPECIES\_BINOMIAL"}\NormalTok{, }\FunctionTok{sort}\NormalTok{(}\FunctionTok{colnames}\NormalTok{(clusters\_df)[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{]))}
+
+\CommentTok{\# Reorder the columns based on the sorted column names}
+\NormalTok{clusters\_df }\OtherTok{\textless{}{-}}\NormalTok{ clusters\_df[, ordered\_columns]}
+
+\CommentTok{\# Remove duplicated cuts and 0.000 cut}
+\DocumentationTok{\#\# This removes redundancy, as different, very close cuts have exactly the same clusters}
+\NormalTok{clusters\_unique }\OtherTok{\textless{}{-}}\NormalTok{ clusters\_df[}\SpecialCharTok{!}\FunctionTok{duplicated}\NormalTok{(}\FunctionTok{t}\NormalTok{(clusters\_df))]}
+\NormalTok{clusters\_unique }\OtherTok{\textless{}{-}}\NormalTok{ clusters\_unique[, }\SpecialCharTok{!}\NormalTok{(}\FunctionTok{names}\NormalTok{(clusters\_unique) }\SpecialCharTok{\%in\%} \StringTok{"cut\_0.000000"}\NormalTok{)]}
+
+\CommentTok{\# Add families from traitfile}
+\NormalTok{merged\_traits }\OtherTok{\textless{}{-}} \FunctionTok{merge}\NormalTok{(clusters\_unique, cancer\_traits, }\AttributeTok{by=}\StringTok{"SPECIES\_BINOMIAL"}\NormalTok{, }\AttributeTok{all.x=}\ConstantTok{TRUE}\NormalTok{)}
+\NormalTok{clusters\_unique }\OtherTok{\textless{}{-}} \FunctionTok{cbind}\NormalTok{(clusters\_unique[,}\DecValTok{1}\NormalTok{], merged\_traits}\SpecialCharTok{$}\NormalTok{family, clusters\_unique[,}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{])}
+
+\FunctionTok{colnames}\NormalTok{(clusters\_unique)[}\DecValTok{1}\NormalTok{] }\OtherTok{\textless{}{-}} \StringTok{"SPECIES\_BINOMIAL"}
+\FunctionTok{colnames}\NormalTok{(clusters\_unique)[}\DecValTok{2}\NormalTok{] }\OtherTok{\textless{}{-}} \StringTok{"FAMILY"}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{create-expanded-clusters-file-for-further-analyses}{%
+\subsubsection{Create expanded clusters file for further
+analyses}\label{create-expanded-clusters-file-for-further-analyses}}
+
+\hypertarget{in-order-to-include-species-which-are-not-present-in-the-phylogeny-but-might-be-interesting-to-see-how-the-phenotype-is-distributed-add-them-to-an-expanded-data-frame-replicating-clustering-data-from-closest-individual}{%
+\subparagraph{In order to include species which are not present in the
+phylogeny but might be interesting to see how the phenotype is
+distributed, add them to an expanded data frame, replicating clustering
+data from closest
+individual}\label{in-order-to-include-species-which-are-not-present-in-the-phylogeny-but-might-be-interesting-to-see-how-the-phenotype-is-distributed-add-them-to-an-expanded-data-frame-replicating-clustering-data-from-closest-individual}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{clusters\_unique\_expanded }\OtherTok{\textless{}{-}}\NormalTok{ clusters\_unique}
+
+\CommentTok{\# Extract the genus from SPECIES\_BINOMIAL}
+\NormalTok{clusters\_unique\_expanded}\SpecialCharTok{$}\NormalTok{GENUS }\OtherTok{\textless{}{-}} \FunctionTok{sapply}\NormalTok{(}\FunctionTok{strsplit}\NormalTok{(}\FunctionTok{as.character}\NormalTok{(clusters\_unique\_expanded}\SpecialCharTok{$}\NormalTok{SPECIES\_BINOMIAL), }\StringTok{"\_"}\NormalTok{), }\StringTok{\textasciigrave{}}\AttributeTok{[}\StringTok{\textasciigrave{}}\NormalTok{, }\DecValTok{1}\NormalTok{)}
+\NormalTok{genus\_to\_check }\OtherTok{\textless{}{-}} \FunctionTok{sapply}\NormalTok{(}\FunctionTok{strsplit}\NormalTok{(cancer\_species\_to\_check, }\StringTok{"\_"}\NormalTok{), }\StringTok{\textasciigrave{}}\AttributeTok{[}\StringTok{\textasciigrave{}}\NormalTok{, }\DecValTok{1}\NormalTok{)}
+
+\CommentTok{\# Loop through cancer\_species\_to\_check and match with merged\_traits}
+\ControlFlowTok{for}\NormalTok{(species }\ControlFlowTok{in}\NormalTok{ cancer\_species\_to\_check)\{}
+  
+  \CommentTok{\# Find the genus of the species}
+\NormalTok{  genus }\OtherTok{\textless{}{-}} \FunctionTok{strsplit}\NormalTok{(species, }\StringTok{"\_"}\NormalTok{)[[}\DecValTok{1}\NormalTok{]][}\DecValTok{1}\NormalTok{]}
+  
+  \CommentTok{\# Check if the genus exists in merged\_traits}
+\NormalTok{  matching\_index }\OtherTok{\textless{}{-}} \FunctionTok{which}\NormalTok{(clusters\_unique\_expanded}\SpecialCharTok{$}\NormalTok{GENUS }\SpecialCharTok{==}\NormalTok{ genus)}
+  
+  \CommentTok{\# If a match is found, duplicate the row and modify the SPECIES\_BINOMIAL}
+  \ControlFlowTok{if}\NormalTok{(}\FunctionTok{length}\NormalTok{(matching\_index) }\SpecialCharTok{\textgreater{}} \DecValTok{0}\NormalTok{)\{}
+\NormalTok{    new\_row }\OtherTok{\textless{}{-}}\NormalTok{ clusters\_unique\_expanded[matching\_index[}\DecValTok{1}\NormalTok{],]}
+\NormalTok{    new\_row}\SpecialCharTok{$}\NormalTok{SPECIES\_BINOMIAL }\OtherTok{\textless{}{-}}\NormalTok{ species}
+\NormalTok{    clusters\_unique\_expanded }\OtherTok{\textless{}{-}} \FunctionTok{rbind}\NormalTok{(clusters\_unique\_expanded, new\_row)}
+\NormalTok{  \}}
+\NormalTok{\}}
+
+\CommentTok{\# Remove genus column}
+\NormalTok{clusters\_unique\_expanded}\SpecialCharTok{$}\NormalTok{GENUS }\OtherTok{\textless{}{-}} \ConstantTok{NULL}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{visualicing-cluster-distribution-with-species-present-in-the-phylogeny-and-trait-values}{%
+\subsubsection{Visualicing cluster distribution with species present in
+the phylogeny and trait
+values}\label{visualicing-cluster-distribution-with-species-present-in-the-phylogeny-and-trait-values}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Extracting tip labels order from the phylo object}
+\NormalTok{ordered\_species }\OtherTok{\textless{}{-}}\NormalTok{ tree}\SpecialCharTok{$}\NormalTok{tip.label}
+
+\CommentTok{\# Create a new factor with the desired order for SPECIES\_BINOMIAL}
+\NormalTok{clusters\_unique}\SpecialCharTok{$}\NormalTok{SPECIES\_BINOMIAL }\OtherTok{\textless{}{-}} \FunctionTok{factor}\NormalTok{(clusters\_unique}\SpecialCharTok{$}\NormalTok{SPECIES\_BINOMIAL, }\AttributeTok{levels =}\NormalTok{ ordered\_species)}
+
+\CommentTok{\# Convert the data frame from wide to long format}
+\NormalTok{clusters\_long }\OtherTok{\textless{}{-}}\NormalTok{ clusters\_unique }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{gather}\NormalTok{(}\AttributeTok{key =} \StringTok{"cut"}\NormalTok{, }\AttributeTok{value =} \StringTok{"cluster"}\NormalTok{, }\FunctionTok{starts\_with}\NormalTok{(}\StringTok{"cut"}\NormalTok{))}
+
+\CommentTok{\# Add a cut for FAMILY to visualize it alongside the other cuts}
+\NormalTok{clusters\_long }\OtherTok{\textless{}{-}} \FunctionTok{rbind}\NormalTok{(clusters\_long, }\FunctionTok{data.frame}\NormalTok{(}\AttributeTok{SPECIES\_BINOMIAL =}\NormalTok{ clusters\_unique}\SpecialCharTok{$}\NormalTok{SPECIES\_BINOMIAL, }\AttributeTok{cut =} \StringTok{"FAMILY"}\NormalTok{, }\AttributeTok{cluster =} \FunctionTok{as.character}\NormalTok{(clusters\_unique}\SpecialCharTok{$}\NormalTok{FAMILY), }\AttributeTok{FAMILY =}\NormalTok{ clusters\_unique}\SpecialCharTok{$}\NormalTok{FAMILY))}
+
+
+\CommentTok{\# Calculate the number of unique cluster values and families}
+\NormalTok{num\_clusters }\OtherTok{\textless{}{-}} \FunctionTok{length}\NormalTok{(}\FunctionTok{unique}\NormalTok{(clusters\_long}\SpecialCharTok{$}\NormalTok{cluster))}
+\NormalTok{num\_families }\OtherTok{\textless{}{-}} \FunctionTok{length}\NormalTok{(}\FunctionTok{unique}\NormalTok{(clusters\_unique}\SpecialCharTok{$}\NormalTok{FAMILY))}
+
+\CommentTok{\# Colors for clusters using the Dark2 palette for distinct colors}
+\NormalTok{cluster\_colors }\OtherTok{\textless{}{-}}\NormalTok{ RColorBrewer}\SpecialCharTok{::}\FunctionTok{brewer.pal}\NormalTok{(}\FunctionTok{min}\NormalTok{(num\_clusters, }\DecValTok{8}\NormalTok{), }\StringTok{"Dark2"}\NormalTok{)}
+
+\CommentTok{\# If you have more than 8 clusters, recycle the colors}
+\ControlFlowTok{if}\NormalTok{(num\_clusters }\SpecialCharTok{\textgreater{}} \DecValTok{8}\NormalTok{)\{}
+\NormalTok{  cluster\_colors }\OtherTok{\textless{}{-}} \FunctionTok{rep}\NormalTok{(cluster\_colors, }\FunctionTok{ceiling}\NormalTok{(num\_clusters}\SpecialCharTok{/}\DecValTok{8}\NormalTok{))[}\DecValTok{1}\SpecialCharTok{:}\NormalTok{num\_clusters]}
+\NormalTok{\}}
+
+\CommentTok{\# Colors for families using the Dark2 palette for distinct colors}
+\NormalTok{family\_colors }\OtherTok{\textless{}{-}}\NormalTok{ RColorBrewer}\SpecialCharTok{::}\FunctionTok{brewer.pal}\NormalTok{(}\FunctionTok{min}\NormalTok{(num\_families, }\DecValTok{8}\NormalTok{), }\StringTok{"Dark2"}\NormalTok{)}
+
+\CommentTok{\# If you have more than 8 families, recycle the colors}
+\ControlFlowTok{if}\NormalTok{(num\_families }\SpecialCharTok{\textgreater{}} \DecValTok{8}\NormalTok{)\{}
+\NormalTok{  family\_colors }\OtherTok{\textless{}{-}} \FunctionTok{rep}\NormalTok{(family\_colors, }\FunctionTok{ceiling}\NormalTok{(num\_families}\SpecialCharTok{/}\DecValTok{8}\NormalTok{))[}\DecValTok{1}\SpecialCharTok{:}\NormalTok{num\_families]}
+\NormalTok{\}}
+
+
+\CommentTok{\# Combine the colors and levels}
+\NormalTok{all\_colors }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(cluster\_colors, family\_colors)}
+\NormalTok{all\_levels }\OtherTok{\textless{}{-}} \FunctionTok{unique}\NormalTok{(}\FunctionTok{c}\NormalTok{(}\FunctionTok{as.character}\NormalTok{(clusters\_long}\SpecialCharTok{$}\NormalTok{cluster), }\FunctionTok{as.character}\NormalTok{(clusters\_unique}\SpecialCharTok{$}\NormalTok{FAMILY)))}
+
+\CommentTok{\# Plot}
+\FunctionTok{ggplot}\NormalTok{(clusters\_long, }\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ cut, }\AttributeTok{y =}\NormalTok{ SPECIES\_BINOMIAL)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_tile}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{fill =}\NormalTok{ cluster), }\AttributeTok{color =} \StringTok{"white"}\NormalTok{, }\AttributeTok{linewidth =} \FloatTok{0.5}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{scale\_fill\_manual}\NormalTok{(}\AttributeTok{values =} \FunctionTok{setNames}\NormalTok{(all\_colors, all\_levels)) }\SpecialCharTok{+}
+  \FunctionTok{scale\_x\_discrete}\NormalTok{(}\AttributeTok{expand =} \FunctionTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{,}\DecValTok{0}\NormalTok{)) }\SpecialCharTok{+}
+  \FunctionTok{labs}\NormalTok{(}\AttributeTok{y =} \StringTok{"Species"}\NormalTok{, }\AttributeTok{x =} \StringTok{"Cut \& Family"}\NormalTok{, }\AttributeTok{fill =} \StringTok{"Value/Group"}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}\AttributeTok{axis.text.x =} \FunctionTok{element\_text}\NormalTok{(}\AttributeTok{angle =} \DecValTok{90}\NormalTok{, }\AttributeTok{hjust =} \DecValTok{1}\NormalTok{),}
+        \AttributeTok{panel.spacing.x =} \FunctionTok{unit}\NormalTok{(}\DecValTok{0}\NormalTok{, }\StringTok{"lines"}\NormalTok{)) }\SpecialCharTok{+}
+  \FunctionTok{theme\_minimal}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{data_preparation_files/figure-latex/unnamed-chunk-10-1.pdf}
+
+\hypertarget{visualicing-cluster-distribution-with-species-not-present-in-the-phylogeny}{%
+\subsubsection{Visualicing cluster distribution with species not present
+in the
+phylogeny}\label{visualicing-cluster-distribution-with-species-not-present-in-the-phylogeny}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Factorice and order by family}
+\NormalTok{clusters\_unique\_expanded}\SpecialCharTok{$}\NormalTok{FAMILY }\OtherTok{\textless{}{-}} \FunctionTok{as.factor}\NormalTok{(}\FunctionTok{sort}\NormalTok{(clusters\_unique\_expanded}\SpecialCharTok{$}\NormalTok{FAMILY))}
+
+\CommentTok{\# Convert the data frame from wide to long format}
+\NormalTok{clusters\_expanded\_long }\OtherTok{\textless{}{-}}\NormalTok{ clusters\_unique\_expanded }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{gather}\NormalTok{(}\AttributeTok{key =} \StringTok{"cut"}\NormalTok{, }\AttributeTok{value =} \StringTok{"cluster"}\NormalTok{, }\FunctionTok{starts\_with}\NormalTok{(}\StringTok{"cut"}\NormalTok{))}
+
+\CommentTok{\# Add a cut for FAMILY to visualize it alongside the other cuts}
+\NormalTok{clusters\_expanded\_long }\OtherTok{\textless{}{-}} \FunctionTok{rbind}\NormalTok{(clusters\_expanded\_long, }\FunctionTok{data.frame}\NormalTok{(}\AttributeTok{SPECIES\_BINOMIAL =}\NormalTok{ clusters\_unique\_expanded}\SpecialCharTok{$}\NormalTok{SPECIES\_BINOMIAL, }\AttributeTok{cut =} \StringTok{"FAMILY"}\NormalTok{, }\AttributeTok{cluster =} \FunctionTok{as.character}\NormalTok{(clusters\_unique\_expanded}\SpecialCharTok{$}\NormalTok{FAMILY), }\AttributeTok{FAMILY =}\NormalTok{ clusters\_unique\_expanded}\SpecialCharTok{$}\NormalTok{FAMILY))}
+
+
+\CommentTok{\# Calculate the number of unique cluster values and families}
+\NormalTok{num\_clusters }\OtherTok{\textless{}{-}} \FunctionTok{length}\NormalTok{(}\FunctionTok{unique}\NormalTok{(clusters\_expanded\_long}\SpecialCharTok{$}\NormalTok{cluster))}
+\NormalTok{num\_families }\OtherTok{\textless{}{-}} \FunctionTok{length}\NormalTok{(}\FunctionTok{unique}\NormalTok{(clusters\_unique\_expanded}\SpecialCharTok{$}\NormalTok{FAMILY))}
+
+
+\CommentTok{\# Colors for clusters using the Dark2 palette for distinct colors}
+\NormalTok{cluster\_colors }\OtherTok{\textless{}{-}}\NormalTok{ RColorBrewer}\SpecialCharTok{::}\FunctionTok{brewer.pal}\NormalTok{(}\FunctionTok{min}\NormalTok{(num\_clusters, }\DecValTok{8}\NormalTok{), }\StringTok{"Dark2"}\NormalTok{)}
+
+\CommentTok{\# If you have more than 8 clusters, recycle the colors}
+\ControlFlowTok{if}\NormalTok{(num\_clusters }\SpecialCharTok{\textgreater{}} \DecValTok{8}\NormalTok{)\{}
+\NormalTok{  cluster\_colors }\OtherTok{\textless{}{-}} \FunctionTok{rep}\NormalTok{(cluster\_colors, }\FunctionTok{ceiling}\NormalTok{(num\_clusters}\SpecialCharTok{/}\DecValTok{8}\NormalTok{))[}\DecValTok{1}\SpecialCharTok{:}\NormalTok{num\_clusters]}
+\NormalTok{\}}
+
+\CommentTok{\# Colors for families using the Dark2 palette for distinct colors}
+\NormalTok{family\_colors }\OtherTok{\textless{}{-}}\NormalTok{ RColorBrewer}\SpecialCharTok{::}\FunctionTok{brewer.pal}\NormalTok{(}\FunctionTok{min}\NormalTok{(num\_families, }\DecValTok{8}\NormalTok{), }\StringTok{"Dark2"}\NormalTok{)}
+
+\CommentTok{\# If you have more than 8 families, recycle the colors}
+\ControlFlowTok{if}\NormalTok{(num\_families }\SpecialCharTok{\textgreater{}} \DecValTok{8}\NormalTok{)\{}
+\NormalTok{  family\_colors }\OtherTok{\textless{}{-}} \FunctionTok{rep}\NormalTok{(family\_colors, }\FunctionTok{ceiling}\NormalTok{(num\_families}\SpecialCharTok{/}\DecValTok{8}\NormalTok{))[}\DecValTok{1}\SpecialCharTok{:}\NormalTok{num\_families]}
+\NormalTok{\}}
+
+\CommentTok{\# Combine the colors and levels}
+\NormalTok{all\_colors }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(cluster\_colors, family\_colors)}
+\NormalTok{all\_levels }\OtherTok{\textless{}{-}} \FunctionTok{unique}\NormalTok{(}\FunctionTok{c}\NormalTok{(}\FunctionTok{as.character}\NormalTok{(clusters\_expanded\_long}\SpecialCharTok{$}\NormalTok{cluster), }\FunctionTok{as.character}\NormalTok{(clusters\_unique\_expanded}\SpecialCharTok{$}\NormalTok{FAMILY)))}
+
+\CommentTok{\# Plot}
+\FunctionTok{ggplot}\NormalTok{(clusters\_expanded\_long, }\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ cut, }\AttributeTok{y =}\NormalTok{ SPECIES\_BINOMIAL)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_tile}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{fill =}\NormalTok{ cluster), }\AttributeTok{color =} \StringTok{"white"}\NormalTok{, }\AttributeTok{linewidth =} \FloatTok{0.5}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{scale\_fill\_manual}\NormalTok{(}\AttributeTok{values =} \FunctionTok{setNames}\NormalTok{(all\_colors, all\_levels)) }\SpecialCharTok{+}
+  \FunctionTok{scale\_x\_discrete}\NormalTok{(}\AttributeTok{expand =} \FunctionTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{,}\DecValTok{0}\NormalTok{)) }\SpecialCharTok{+}
+  \FunctionTok{labs}\NormalTok{(}\AttributeTok{y =} \StringTok{"Species"}\NormalTok{, }\AttributeTok{x =} \StringTok{"Cut \& Family"}\NormalTok{, }\AttributeTok{fill =} \StringTok{"Value/Group"}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}\AttributeTok{axis.text.x =} \FunctionTok{element\_text}\NormalTok{(}\AttributeTok{angle =} \DecValTok{90}\NormalTok{, }\AttributeTok{hjust =} \DecValTok{1}\NormalTok{),}
+        \AttributeTok{panel.spacing.x =} \FunctionTok{unit}\NormalTok{(}\DecValTok{0}\NormalTok{, }\StringTok{"lines"}\NormalTok{)) }\SpecialCharTok{+}
+  \FunctionTok{theme\_minimal}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{data_preparation_files/figure-latex/unnamed-chunk-11-1.pdf}
+
+\end{document}

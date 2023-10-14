@@ -1,3 +1,8 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
 ################################## 
 
 # DATA PREPARATION
@@ -13,184 +18,211 @@ output: html
 ---
 
 ```{r setup}
+
 knitr::opts_knit$set(root.dir = "/home/rstudio/NEOPLASY_PRIMATES")
 knitr::opts_chunk$set(engine.path = list(
 python = '/home/rstudio/NEOPLASY_PRIMATES/TreeCluster/venv/bin/python'))
 getwd()
+
 ```
 
 ```{r check-wd}
+
 getwd()
+
 ```
 
 ### Seed and library loading
 
-```{r}
-set.seed(22)
+```{r,warning=FALSE,message=FALSE}
+
+set.seed(1998)
+
+# General use libraries
 library(ape)
 library(RRphylo)
 library(phytools)
 library(reticulate)
+
+# Non-concordant species retrieval 
+library(stringdist)
+library(taxize)
+library(R.utils)
+
+# Sort distances chunk
+library(adephylo)
+library(castor)
+
+# Cluster merging
+library(dplyr)
+
+# Plotting
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+library(viridis)
+library(ggtree)
+library(RColorBrewer)
+
 ```
 
-### Import cancer traitfile
+### Tree import
 
 ```{r}
-cancer_traits <- read.csv("Data/Neoplasia/species360_primates_neoplasia_20230519.csv", sep = "\t")
-```
 
-### File modifications that must be performed
-
-#### Spaces at the end, name dissimilarities and stuff like that
-
-```{r}
-cancer_traits[] <- lapply(cancer_traits, function(col) trimws(col))
-```
-
-### Binarize species name for standarization
-
-```{r}
-cancer_traits$SPECIES_BINOMIAL <- sub(" ", "_", cancer_traits$species)
-```
-
-#### Name the binzarized object
-
-```{r}
-cancer_species_bin <- cancer_traits$SPECIES_BINOMIAL 
-```
-
-### Tree observation and prunning
-
-```{r}
 nw_tree <- read.newick("Data/233-GENOMES/science.abn7829_data_s4.nex.tree")
 
 # Give a name to species name attribute
 tree_species <- nw_tree$tip.label
+
 ```
 
-#### First we need to observe if there are any discordances between the two namesets (tree and traits)
+### Cancer traitfile import
 
-alternative
 ```{r}
-library(stringdist)
-library(taxize)
 
-# Function to retrieve taxonomic classification for a species from NCBI
-get_taxonomic_classification <- function(species_name) {
-  uids <- get_uid(species_name)
+cancer_traits <- read.csv("Data/Neoplasia/species360_primates_neoplasia_20230519.csv", sep = ",")
+
+```
+
+### Cancer trait file polishing
+
+#### Remove spaces at the end, work out name dissimilarities and stuff like that
+
+```{r}
+
+# Remove any whitespaces at the end of the cells
+cancer_traits[] <- lapply(cancer_traits, function(col) trimws(col))
+
+# Binarize species name for standarization
+cancer_traits$SPECIES_BINOMIAL <- gsub(" ", "_", cancer_traits$species)
+
+# Need to name the object to work wit it (not sure why)
+cancer_species_bin <- cancer_traits$SPECIES_BINOMIAL 
+
+```
+
+#### Dissimilarities between the two namesets (tree and traits)
+
+```{r}
+
+# Function to retrieve synonyms for a species from ITIS
+# Simplified Function to retrieve accepted name for a species from ITIS
+get_synonyms <- function(species_name) {
+  retry <- TRUE
+  retries <- 0
+  max_retries <- 15  # Set a maximum number of retries to avoid an infinite loop
+  syns <- NULL
   
-  if (length(uids) > 0 && !is.na(uids[1])) {
-    taxo_info <- classification(uids[1], db = "ncbi")
-    if ("genus" %in% names(taxo_info) && "family" %in% names(taxo_info)) {
-      return(taxo_info)
+  while (retry && retries < max_retries) {
+    try(
+      # Set a 10-second timeout for the synonyms query
+      withTimeout({
+        syns <- synonyms(species_name, db = "itis", rows = 1)
+      }, timeout = 10),
+      silent = TRUE
+    )
+    
+    # Check if the query succeeded or timed out
+    if (!is.null(syns) && length(syns) > 0) {
+      retry <- FALSE  # Query succeeded, so exit the loop
+    } else {
+      Sys.sleep(5)  # Wait 5 seconds before retrying
+      retries <- retries + 1
     }
   }
   
-  return(list(genus = NA, family = NA))
+  return(syns)
 }
+
 
 
 # Identify species that are directly present in the tree
 direct_matches <- cancer_species_bin %in% tree_species
 cancer_species_to_check <- cancer_species_bin[!direct_matches]
 
-# For species not present in the tree, check for close string matches
+# Remove subspecies information from cancer_species_to_check
+cancer_species_to_check <- sapply(strsplit(cancer_species_to_check, "_"), function(x) {
+  paste(x[1:2], collapse = "_")
+})
+
+
+# Check for close string matches
 dist_matrix <- stringdist::stringdistmatrix(tree_species, cancer_species_to_check, method = "lv")
 threshold <- 2
 close_matches <- which(dist_matrix <= threshold, arr.ind = TRUE)
-
-# Change the close matching species names in the dataset
 cancer_species_bin[which(!direct_matches)[close_matches[, 2]]] <- tree_species[close_matches[, 1]]
 
-# For the species that aren't direct or close matches, check taxonomic classifications
-remaining_indices <- setdiff(1:length(cancer_species_to_check), close_matches[, 2])
-for (i in remaining_indices) {
-  current_name <- cancer_species_to_check[i]
-  taxo_info <- get_taxonomic_classification(current_name)
-  
-  if (!is.null(taxo_info) && (taxo_info$genus %in% tree_species || taxo_info$family %in% tree_species)) {
-    closest_match <- tree_species[which.min(dist_matrix[,i])]
-    cat(paste("Changing", current_name, "to", closest_match, "based on taxonomic match.\n"))
-    cancer_species_bin[which(!direct_matches)[i]] <- closest_match
-  } else {
-    cat(paste("Removing", current_name, "as it doesn't match taxonomically.\n"))
-    cancer_species_bin[which(!direct_matches)[i]] <- NA
-  }
-}
+# # For the species that aren't direct or close matches, check synonyms
+# remaining_indices <- setdiff(1:length(cancer_species_to_check), close_matches[, 2])
+# for (i in remaining_indices) {
+#   current_name <- cancer_species_to_check[i]
+#   
+#   # Check for synonyms
+#   accepted_name <- get_synonyms(current_name)
+#   
+#   if (accepted_name %in% tree_species) {
+#     cat(paste("Changing", current_name, "to", accepted_name, "based on accepted name match.\n"))
+#     cancer_species_bin[which(!direct_matches)[i]] <- accepted_name
+#   } else {
+#     cat(paste("Removing", current_name, "as it doesn't match synonymically.\n"))
+#     cancer_species_bin[which(!direct_matches)[i]] <- NA
+#   }
+# }
+
+# Note that every time that the above code fails, rest of the execution shuts so as soon as
+# query is done, run below code
 
 # Filter out NAs
 cancer_species_bin <- cancer_species_bin[!is.na(cancer_species_bin)]
-
+names(cancer_species_bin) <- cancer_species_bin
 print(cancer_species_bin)
 
+### NOTE THAT SUBSPECIES WERE REMOVED BECAUSE I WAS BECOMING MAD AND THEY ARE NOT RELEVANT TBF
+
 ```
+#### Tree prunning
 
-```{r}
-library(stringdist)
+```{r, fig.width=20, fig.height=20}
 
-# Matrix of pairwise string distances
-dist_matrix <- stringdist::stringdistmatrix(tree_species, cancer_species_bin, method = "lv")
 
-# Find coincidences where the distance is 0 (exact match) or 1 or 2
-threshold <- 2
-coincidences <- which(dist_matrix <= threshold, arr.ind = TRUE)
-
-# Make cancer_species_bin strings concordant with tree_species strings for the close matches
-cancer_species_bin[coincidences[, 2]] <- tree_species[coincidences[, 1]]
-non_concordant_indices <- setdiff(1:length(cancer_species_bin), coincidences[, 2])
-removed_species_bin <- cancer_species_bin[non_concordant_indices]
-cancer_species_bin <- cancer_species_bin[-non_concordant_indices]
-names(cancer_species_bin) <- NULL
-names(cancer_species_bin) <- cancer_species_bin 
-
-print(cancer_species_bin)
-```
-Falta mirar aquí si de las que no están, alguna tiene otro nombre!!
-
-#### Prunning
-
-```{r}
 pruned_tree <- treedataMatch(tree=nw_tree,y=cancer_species_bin)
 
 # Rename the variable for posterior ease of use
 tree <- pruned_tree$tree
 write.tree(tree, file="Out/tree_prunning/science.abn7829_data_s4.nex.tree.pruned")
 
-# Prune cancer traifile
-pruned_cancer_traits <- pruned_cancer_traits[!(unlist(pruned_cancer_traits) %in% unlist(pruned_tree$))]
+# Check how the two trees compare
+comparePhylo(tree, nw_tree, plot = TRUE, force.rooted = TRUE)
+
 ```
 
 ### Clustering by branch depth
 
-#### Re-concluded to do the exploration node-wise
+##### Revised to do the exploration node-wise
 
 ```{r}
-library(adephylo)
-library(castor)
 
+# Get distances from all nodes to root
 sorted_distances <- sort(get_all_distances_to_root(tree))
 
-# Identify duplicates rounded to 5 decimal places
+# Identify duplicates rounded to 5 decimal places (for significance)
 duplicates <- duplicated(round(unlist(sorted_distances), 5))
 
 # Remove duplicates
 unique_distances <- sorted_distances[!duplicates]
 
-# Generate and execute the bash commands using the system function
+# Cut the tree using TreeCluster (bash)
 for (index in seq_along(unique_distances)) {
   node <- unique_distances[[index]]
   
-  # Adding breaklines before the echo statement
-  system("echo ''")
-  
-  echo_command <- sprintf("echo %f", node)
-  system(echo_command)
-  
-  # Adding breaklines after the echo statement
-  system("echo ''")
-  
+  # Visualice the node
+  # echo_command <- sprintf("echo %f", node)
+  # system(echo_command)
+    
+  # Cut the tree by every possible nodal distance and collect the clusters in separated files for further use
   output_path <- sprintf("Out/tree_clustering/%d_cut_%f.clusters", index, node)
-  tree_cluster_command <- sprintf("python3 TreeCluster/TreeCluster.py -i Out/tree_prunning/science.abn7829_data_s4.nex.tree.pruned -t %f --method leaf_dist_max -v -o %s", node, output_path)
+  tree_cluster_command <- sprintf("python3 TreeCluster/TreeCluster.py -i Out/tree_prunning/science.abn7829_data_s4.nex.tree.pruned -t %f --method root_dist -s 99 -o %s", node, output_path)
   system(tree_cluster_command)
 }
 
@@ -198,7 +230,6 @@ for (index in seq_along(unique_distances)) {
 
 ### Now lets merge all the clusters into a single dataframe, including also the families
 ```{r}
-library(dplyr)
 
 # Identify all cluster files
 cluster_files <- list.files(path = "Out/tree_clustering/", full.names = TRUE)
@@ -225,48 +256,175 @@ process_cluster_file <- function(file_path) {
 # Process all cluster files
 list_of_dfs <- lapply(cluster_files, process_cluster_file)
 
-# Merge all dataframes by SequenceName
+# Merge all data frames by SequenceName
 clusters_df <- Reduce(function(x, y) {
-  merge(x, y, by = "SPECIES_BINOMIAL", all = TRUE)
+  merge(x, y, by = "SPECIES_BINOMIAL", all.y = TRUE, no.dups = TRUE)
 }, list_of_dfs)
 
 # Keep the SPECIES_BINOMIAL column fixed and order the rest
-ordered_columns <- c("SPECIES_BINOMIAL", sort(colnames(merged_df)[-1]))
+ordered_columns <- c("SPECIES_BINOMIAL", sort(colnames(clusters_df)[-1]))
 
 # Reorder the columns based on the sorted column names
-clusters_df <- merged_df[, ordered_columns]
+clusters_df <- clusters_df[, ordered_columns]
 
 # Remove duplicated cuts and 0.000 cut
-clusters_unique <- clusters_df[, c(TRUE, !duplicated(as.list(clusters_df)))]
-clusters_unique <- clusters_unique[, !(names(clusters_unique) %in% "cut_0.000000")]
+## This removes redundancy, as different, very close cuts have exactly the same clusters
+clusters_unique <- clusters_df[!duplicated(t(clusters_df))]
 
 # Add families from traitfile
-clusters_unique <- cbind(clusters_unique[,1], FAMILY=cancer_traits$family, clusters_unique[,-1])
+merged_traits <- merge(clusters_unique, cancer_traits, by="SPECIES_BINOMIAL", all.x=TRUE)
+clusters_unique <- cbind(clusters_unique[,1], merged_traits$family, clusters_unique[,-1])
 
-# Verificar el dataframe resultante
-print(clusters_df)
+colnames(clusters_unique)[1] <- "SPECIES_BINOMIAL"
+colnames(clusters_unique)[2] <- "FAMILY"
 
 ```
 
-### Now lets see it!!!
+### Create expanded clusters file for further analyses
+
+##### In order to include species which are not present in the phylogeny but might be interesting to see how the phenotype is distributed, add them to an expanded data frame, replicating clustering data from closest individual
+
 ```{r}
-library(pheatmap)
 
-# Assuming `cluster_df` is the dataframe you've created earlier with species in rows and cuts as columns
-pheatmap(clusters_df[, -1],
-         scale = "none",
-         clustering_distance_rows = "euclidean",
-         clustering_distance_cols = "euclidean",
-         clustering_method = "complete",
-         show_rownames = TRUE,
-         show_colnames = TRUE)
+clusters_unique_expanded <- clusters_unique
 
-pheatmap(clusters_df[, -1], 
-         scale = "none",
-         clustering_distance_rows = "euclidean",
-         clustering_distance_cols = "euclidean",
-         clustering_method = "complete")
+# Extract the genus from SPECIES_BINOMIAL
+clusters_unique_expanded$GENUS <- sapply(strsplit(as.character(clusters_unique_expanded$SPECIES_BINOMIAL), "_"), `[`, 1)
+genus_to_check <- sapply(strsplit(cancer_species_to_check, "_"), `[`, 1)
+
+# Loop through cancer_species_to_check and match with merged_traits
+for(species in cancer_species_to_check){
+  
+  # Find the genus of the species
+  genus <- strsplit(species, "_")[[1]][1]
+  
+  # Check if the genus exists in merged_traits
+  matching_index <- which(clusters_unique_expanded$GENUS == genus)
+  
+  # If a match is found, duplicate the row and modify the SPECIES_BINOMIAL
+  if(length(matching_index) > 0){
+    new_row <- clusters_unique_expanded[matching_index[1],]
+    new_row$SPECIES_BINOMIAL <- species
+    clusters_unique_expanded <- rbind(clusters_unique_expanded, new_row)
+  }
+}
+
+# Remove genus column
+clusters_unique_expanded$GENUS <- NULL
+
+```
+### Visualicing cluster distribution with species present in the phylogeny and trait values
+
+```{r, fig.width=18, fig.height=18, dev = 'png'}
+
+# Extracting tip labels order from the phylo object
+ordered_species <- tree$tip.label
+
+# Create a new factor with the desired order for SPECIES_BINOMIAL
+clusters_unique$SPECIES_BINOMIAL <- factor(clusters_unique$SPECIES_BINOMIAL, levels = ordered_species)
+
+# Convert the data frame from wide to long format
+clusters_long <- clusters_unique %>%
+  gather(key = "cut", value = "cluster", starts_with("cut"))
+
+# Add a cut for FAMILY to visualize it alongside the other cuts
+clusters_long <- rbind(clusters_long, data.frame(SPECIES_BINOMIAL = clusters_unique$SPECIES_BINOMIAL, cut = "FAMILY", cluster = as.character(clusters_unique$FAMILY), FAMILY = clusters_unique$FAMILY))
 
 
+# Calculate the number of unique cluster values and families
+num_clusters <- length(unique(clusters_long$cluster))
+num_families <- length(unique(clusters_unique$FAMILY))
+
+# Colors for clusters using the Dark2 palette for distinct colors
+cluster_colors <- RColorBrewer::brewer.pal(min(num_clusters, 8), "Dark2")
+
+# If you have more than 8 clusters, recycle the colors
+if(num_clusters > 8){
+  cluster_colors <- rep(cluster_colors, ceiling(num_clusters/8))[1:num_clusters]
+}
+
+# Colors for families using the Dark2 palette for distinct colors
+family_colors <- RColorBrewer::brewer.pal(min(num_families, 8), "Dark2")
+
+# If you have more than 8 families, recycle the colors
+if(num_families > 8){
+  family_colors <- rep(family_colors, ceiling(num_families/8))[1:num_families]
+}
+
+
+# Combine the colors and levels
+all_colors <- c(cluster_colors, family_colors)
+all_levels <- unique(c(as.character(clusters_long$cluster), as.character(clusters_unique$FAMILY)))
+
+# Plot
+ggplot(clusters_long, aes(x = cut, y = SPECIES_BINOMIAL)) +
+  geom_tile(aes(fill = cluster), color = "white", linewidth = 0.5) +
+  scale_fill_manual(values = setNames(all_colors, all_levels)) +
+  scale_x_discrete(expand = c(0,0)) +
+  labs(y = "Species", x = "Cut & Family", fill = "Value/Group") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 90, size = 14),
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16),
+    legend.title = element_text(size = 14),
+    legend.text = element_text(size = 12))
+
+```
+
+
+### Visualicing cluster distribution with species not present in the phylogeny
+
+```{r, fig.width=18, fig.height=18, dev = 'png'}
+
+# Factorice and order by family
+clusters_unique_expanded$FAMILY <- as.factor(sort(clusters_unique_expanded$FAMILY))
+
+# Convert the data frame from wide to long format
+clusters_expanded_long <- clusters_unique_expanded %>%
+  gather(key = "cut", value = "cluster", starts_with("cut"))
+
+# Add a cut for FAMILY to visualize it alongside the other cuts
+clusters_expanded_long <- rbind(clusters_expanded_long, data.frame(SPECIES_BINOMIAL = clusters_unique_expanded$SPECIES_BINOMIAL, cut = "FAMILY", cluster = as.character(clusters_unique_expanded$FAMILY), FAMILY = clusters_unique_expanded$FAMILY))
+
+
+# Calculate the number of unique cluster values and families
+num_clusters <- length(unique(clusters_expanded_long$cluster))
+num_families <- length(unique(clusters_unique_expanded$FAMILY))
+
+
+# Colors for clusters using the Dark2 palette for distinct colors
+cluster_colors <- RColorBrewer::brewer.pal(min(num_clusters, 8), "Dark2")
+
+# If you have more than 8 clusters, recycle the colors
+if(num_clusters > 8){
+  cluster_colors <- rep(cluster_colors, ceiling(num_clusters/8))[1:num_clusters]
+}
+
+# Colors for families using the Dark2 palette for distinct colors
+family_colors <- RColorBrewer::brewer.pal(min(num_families, 8), "Dark2")
+
+# If you have more than 8 families, recycle the colors
+if(num_families > 8){
+  family_colors <- rep(family_colors, ceiling(num_families/8))[1:num_families]
+}
+
+# Combine the colors and levels
+all_colors <- c(cluster_colors, family_colors)
+all_levels <- unique(c(as.character(clusters_expanded_long$cluster), as.character(clusters_unique_expanded$FAMILY)))
+
+# Plot
+ggplot(clusters_expanded_long, aes(x = cut, y = SPECIES_BINOMIAL)) +
+  geom_tile(aes(fill = cluster), color = "white", linewidth = 0.5) +
+  scale_fill_manual(values = setNames(all_colors, all_levels)) +
+  scale_x_discrete(expand = c(0,0)) +
+  labs(y = "Species", x = "Cut & Family", fill = "Value/Group") +
+  theme_minimal() + 
+  theme(
+    axis.text.x = element_text(angle = 90, size = 14),
+    axis.text.y = element_text(size = 14),
+    axis.title = element_text(size = 16),
+    legend.title = element_text(size = 14),
+    legend.text = element_text(size = 12))
 
 ```
