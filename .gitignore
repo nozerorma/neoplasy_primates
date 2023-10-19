@@ -8,4 +8,8 @@ Data
 Meeting notes
 Containers/treeviewer.run
 .history/
-.vscode/
+.vslongevity_file.discov <- read_delim(file.path(dataDir,"longevity.farre2021.nofilter.tab"), 
+                                           delim = "\t", escape_double = FALSE, 
+                                           trim_ws = TRUE)
+
+code/
