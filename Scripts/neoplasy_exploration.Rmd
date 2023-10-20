@@ -2,7 +2,9 @@
 title: "trait_exploration"
 author: "Miguel Ramon"
 date: "`r Sys.Date()`"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup}
@@ -31,60 +33,28 @@ getwd()
 ## Seed and library loading
 
 ```{r,warning=FALSE,message=FALSE}
-
+ 
 set.seed(1998)
 
 # General use libraries
-library(ape)
-library(RRphylo)
 library(phytools)
-library(reticulate)
 library(dplyr)
-
-# Non-concordant species retrieval 
-library(stringdist)
-library(taxize)
-library(R.utils)
-
-# Sort distances chunk
-library(adephylo)
-library(castor)
-
-# Cluster merging
-library(dplyr)
-
-# Plotting
-library(ggplot2)
-library(tidyr)
-library(dplyr)
-library(viridis)
-library(ggtree)
-library(RColorBrewer)
-library(svglite)
-
-# From Alejandro
-library(e1071)
-
-# From Noelia
-library(tidyverse)
-library(ggpubr)
-library(FactoMineR)
-library(factoextra)
-library(corrplot)
-# library(GGally)
-library(cowplot)
-library(ape)
-library(nlme)
-# library(gt)
-library(ggtree)
-library(phytools)
-library(RRphylo)
-library(picante)
-library(ggnewscale)
 library(reshape)
-library(palettetown)
+library(tidyr)
 library(compositions)
+
+# Graph plotting
+library(ggplot2)
+library(corrplot)
+library(ggtree)
+
+# Colors
+library(palettetown)
+library(microViz)
+
+# Tabbing
 library(gt)
+
 ```
 
 ## Tree import and prunning
@@ -245,45 +215,6 @@ spread_df <- melted_dataframe_traits %>%
   spread(Trait, value)
 ```
 
-```{r correlation plots, fig.height = 5, fig.width = 10, dev = 'svg'}
-
-# Filter dataframe for x and y values
-df_x <- melted_dataframe_traits[melted_dataframe_traits$Trait == "necropsy_count", ]
-df_y <- melted_dataframe_traits[melted_dataframe_traits$Trait == "neoplasia_necropsy", ]
-
-# Merge them based on a common identifier (assuming you have an 'ID' column)
-merged_df <- merge(df_x, df_y, by=c("Species","Family"))
-
-# Map_plot
-# Create a scatterplot
-scatter_plot <- ggplot(data = merged_df, 
-                      aes(x = value.x, y = value.y, color = Family)) + 
-  geom_point(data = subset(merged_df, 
-                      !(outlier.y %in% c("high_outlier_neoplasia_necropsy", "low_outlier_neoplasia_necropsy"))),
-                      size = 4) +  
-  # Plot outliers for y variable with a different shape
-  geom_point(data = subset(merged_df, outlier.y %in% c("high_outlier_neoplasia_necropsy", "low_outlier_neoplasia_necropsy")),
-             aes(shape = outlier.y), size = 4) +
-  scale_shape_manual(values = c("high_outlier_neoplasia_necropsy" = 17, "low_outlier_neoplasia_necropsy" = 17)) +
-  
-  # Label species that are outliers for y variable
-  geom_text(data = subset(merged_df, outlier.y %in% c("high_outlier_neoplasia_necropsy", "low_outlier_neoplasia_necropsy")),
-            aes(label = Species), nudge_y = 1.5, size = 4, vjust = "right", hjust = "top") +
-  
-  labs(x = "Necropsy Count", y = "Neoplasia/Necropsy") +
-  theme_minimal() +
-  geom_smooth(method = "lm", se = TRUE, color="black") +
-  theme(
-    axis.title.x = element_text(size = 10, hjust = 0.5, margin = margin(t = 20, b = 10)),
-    axis.title.y = element_text(size = 10, angle = 90, hjust = 0.5, margin = margin(t = 20, b = 10)),
-    legend.position = "none")
-
-print(scatter_plot)
-
-model <- lm(value.y ~ value.x, data = merged_df)
-summary(model)
-
-```
 ## Top-to-bottom plots
 ### Median - 1SD
 ```{r top-bottom plot with out, fig.height = 8, fig.width = 10, dev = 'svg'}
@@ -299,10 +230,10 @@ ggplot(data = df_z,
                         !(label_family %in% c("low_extreme", "normal", "high_extreme"))),
                         size = 4) +
   geom_point(data = subset(df_z, label_family %in% c("low_extreme", "normal", "high_extreme")),
-               aes(shape = label_family, color = Family), size = 4) +
+               aes(shape = label_family, color = Family, fill = Family), size = 4) +
   scale_shape_manual(values = c("low_extreme" = 22, "normal" = 21, "high_extreme" = 24)) +
   stat_summary(fun.x = median, geom = "errorbar",
-        aes(xmax = ..x.., xmin = ..x..), linewidth = 1, color = pokepal("rayquaza", spread = 1)) +
+        aes(xmax = after_stat(x), xmin = after_stat(x)), linewidth = 1, color = pokepal("rayquaza", spread = 1)) +
   geom_vline(aes(xintercept = median), linetype = "dotted", color = pokepal("rayquaza", spread = 1)) +
     labs(x = "Neoplasia Prevalence", y = "Families") +
   theme(
@@ -311,7 +242,6 @@ ggplot(data = df_z,
     legend.position = "none") + 
   xlim(0,0.5) 
 ```
-
 ### Median - 1SD without outliers
 
 ```{r top-bottom plot wo outliers, fig.height = 8, fig.width = 10, dev = 'svg'}
@@ -327,10 +257,10 @@ ggplot(data = df_z_nooutlier,
                         !(label_family %in% c("low_extreme", "normal", "high_extreme"))),
                         size = 4) +
   geom_point(data = subset(df_z_nooutlier, label_family %in% c("low_extreme", "normal", "high_extreme")),
-               aes(shape = label_family, color = Family), size = 4) +
+               aes(shape = label_family, color = Family, fill = Family), size = 4) +
   scale_shape_manual(values = c("low_extreme" = 22, "normal" = 21, "high_extreme" = 24)) +
   stat_summary(fun.x = median, geom = "errorbar",
-        aes(xmax = ..x.., xmin = ..x..), linewidth = 1, color = pokepal("rayquaza", spread = 1)) +
+        aes(xmax = after_stat(x), xmin = after_stat(x)), linewidth = 1, color = pokepal("rayquaza", spread = 1)) +
   geom_vline(aes(xintercept = median), linetype = "dotted", color = pokepal("rayquaza", spread = 1)) +
     labs(x = "Neoplasia Prevalence", y = "Families") +
   theme(
@@ -351,10 +281,10 @@ ggplot(data = df_z,
                         !(label_family_2sd %in% c("very_low_extreme", "normal", "very_high_extreme"))),
                         size = 4) +
   geom_point(data = subset(df_z, label_family_2sd %in% c("very_low_extreme", "normal", "very_high_extreme")),
-               aes(shape = label_family_2sd, color = Family), size = 4) +
+               aes(shape = label_family_2sd, color = Family, fill = Family), size = 4) +
   scale_shape_manual(values = c("very_low_extreme" = 22, "normal" = 21, "very_high_extreme" = 24)) +
   stat_summary(fun.x = median, geom = "errorbar",
-        aes(xmax = ..x.., xmin = ..x..), linewidth = 1, color = pokepal("rayquaza", spread = 1)) +
+        aes(xmax = after_stat(x), xmin = after_stat(x)), linewidth = 1, color = pokepal("rayquaza", spread = 1)) +
   geom_vline(aes(xintercept = median), linetype = "dotted", color = pokepal("rayquaza", spread = 1)) +
     labs(x = "Neoplasia Prevalence", y = "Families") +
   theme(
@@ -375,10 +305,10 @@ ggplot(data = df_z_nooutlier,
                         !(label_family_2sd %in% c("very_low_extreme", "normal", "very_high_extreme"))),
                         size = 4) +
   geom_point(data = subset(df_z_nooutlier, label_family_2sd %in% c("very_low_extreme", "normal", "very_high_extreme")),
-               aes(shape = label_family_2sd, color = Family), size = 4) +
+               aes(shape = label_family_2sd, color = Family, fill = Family), size = 4) +
   scale_shape_manual(values = c("very_low_extreme" = 22, "normal" = 21, "very_high_extreme" = 24)) +
   stat_summary(fun.x = median, geom = "errorbar",
-        aes(xmax = ..x.., xmin = ..x..), linewidth = 1, color = pokepal("rayquaza", spread = 1)) +
+        aes(xmax = after_stat(x), xmin = after_stat(x)), linewidth = 1, color = pokepal("rayquaza", spread = 1)) +
   geom_vline(aes(xintercept = median), linetype = "dotted", color = pokepal("rayquaza", spread = 1)) +
     labs(x = "Neoplasia Prevalence", y = "Families") +
   theme(
@@ -416,21 +346,18 @@ NP <- NP[!is.na(names(NP))]
 
 # Necropsy Count
 obj_nc<-contMap(pruned_primates.tree,NC,plot=FALSE)
-obj_nc<-setMap(obj_nc,c("#077223", "#53EC2D", "white", "#F1F97C", 
-                  "#F08431", "#F03131"))
+obj_nc<-setMap(obj_nc,pokepal("kyogre", spread = 4))
 
 plot(obj_nc,fsize=c(1),lwd=c(5),leg.txt="Necropsy Count")
 
 # Neoplasia Count
 obj_nn<-contMap(pruned_primates.tree,NN,plot=FALSE)
-obj_nn<-setMap(obj_nn,c("#077223", "#53EC2D", "white", "#F1F97C", 
-                  "#F08431", "#F03131"))
+obj_nn<-setMap(obj_nn,pokepal("kyogre", spread = 4))
 plot(obj_nn,fsize=c(1),lwd=c(5),leg.txt="Neoplasia Count")
 
 # Neoplasia_prevalence
 obj_np<-contMap(pruned_primates.tree,NP,plot=FALSE)
-obj_np<-setMap(obj_np,c("#077223", "#53EC2D", "white", "#F1F97C", 
-                  "#F08431", "#F03131"))
+obj_np<-setMap(obj_np,pokepal("kyogre", spread = 4))
 plot(obj_np,fsize=c(1),lwd=c(5),leg.txt="Neoplasia Prevalence")
 
 
@@ -442,18 +369,75 @@ plot(obj_np,fsize=c(1),lwd=c(5),leg.txt="Neoplasia Prevalence")
 
 ```{r scatterplot, fig.height = 15, fig.width = 15, dev = 'svg'}
 
-ggplot(cancer_traits_filt, aes(x=necropsy_count, y=neoplasia_necropsy, color=family))+ 
-  geom_point() +
-  geom_smooth(method=lm , color="red", fill="#69b3a2", se=TRUE) +
-  
-  labs(y = "Neoplasia count", x = "Necropsy count", fill = "Neoplasia/Necropsy") +
-  theme_minimal()
+# Filter dataframe for x and y values
+df_x <- melted_dataframe_traits[melted_dataframe_traits$Trait == "necropsy_count", ]
+df_y <- melted_dataframe_traits[melted_dataframe_traits$Trait == "neoplasia_necropsy", ]
 
-ggplot(cancer_traits_filt, aes(x=normalize(necropsy_count), y=normalize(neoplasia_necropsy), color=family))+ 
-  geom_point() +
-  geom_smooth(method=lm , color="red", fill="#69b3a2", se=TRUE) +
-  labs(y = "Neoplasia count", x = "Necropsy count", fill = "Neoplasia/Necropsy") +
-  theme_minimal()
+# Merge them based on a common identifier (assuming you have an 'ID' column)
+merged_df <- merge(df_x, df_y, by=c("Species","Family"))
+
+# Scatterplot
+scatter_plot <- ggplot(data = merged_df, 
+                      aes(x = value.x, y = value.y, color = Family)) + 
+  geom_point(data = subset(merged_df, 
+                      !(outlier.y %in% c("high_outlier_neoplasia_necropsy", "low_outlier_neoplasia_necropsy"))),
+                      size = 4) +  
+  # Plot outliers for y variable with a different shape
+  geom_point(data = subset(merged_df, outlier.y %in% c("high_outlier_neoplasia_necropsy", "low_outlier_neoplasia_necropsy")),
+             aes(shape = outlier.y), size = 4) +
+  scale_shape_manual(values = c("high_outlier_neoplasia_necropsy" = 17, "low_outlier_neoplasia_necropsy" = 22)) +
+  
+  # Label species that are outliers for y variable
+  geom_text(data = subset(merged_df, outlier.y %in% c("high_outlier_neoplasia_necropsy", "low_outlier_neoplasia_necropsy")),
+            aes(label = Species), nudge_y = 1.5, size = 4, vjust = "right", hjust = "top") +
+  
+  labs(x = "Necropsy Count", y = "Neoplasia/Necropsy") +
+  theme_minimal() +
+  geom_smooth(method = "lm", se = TRUE, color = pokepal("rayquaza", spread = 1), fullrange = TRUE) +
+  theme(
+    axis.title.x = element_text(size = 10, hjust = 0.5, margin = margin(t = 20, b = 10)),
+    axis.title.y = element_text(size = 10, angle = 90, hjust = 0.5, margin = margin(t = 20, b = 10)),
+    legend.position = "none")
+
+print(scatter_plot)
+
+model <- lm(value.y ~ value.x, data = merged_df)
+summary(model)
+
+# Filter dataframe for x and y values
+df_x <- melted_dataframe_traits[melted_dataframe_traits$Trait == "necropsy_count", ]
+df_y <- melted_dataframe_traits[melted_dataframe_traits$Trait == "neoplasia_necropsy", ]
+
+# Merge them based on a common identifier (assuming you have an 'ID' column)
+merged_df <- merge(df_x, df_y, by=c("Species","Family"))
+
+# Normalized scatterpot
+scatter_plot_normal <- ggplot(data = merged_df, 
+                      aes(x = normalize(value.x), y = normalize(value.y), color = Family)) + 
+  geom_point(data = subset(merged_df, 
+                      !(outlier.y %in% c("high_outlier_neoplasia_necropsy", "low_outlier_neoplasia_necropsy"))),
+                      size = 4) +  
+  # Plot outliers for y variable with a different shape
+  geom_point(data = subset(merged_df, outlier.y %in% c("high_outlier_neoplasia_necropsy", "low_outlier_neoplasia_necropsy")),
+             aes(shape = outlier.y), size = 4) +
+  scale_shape_manual(values = c("high_outlier_neoplasia_necropsy" = 17, "low_outlier_neoplasia_necropsy" = 22)) +
+  
+  # Label species that are outliers for y variable
+  geom_text(data = subset(merged_df, outlier.y %in% c("high_outlier_neoplasia_necropsy", "low_outlier_neoplasia_necropsy")),
+            aes(label = Species), nudge_y = 0.025, size = 4, vjust = "right", hjust = "top") +
+  
+  labs(x = "Necropsy Count", y = "Neoplasia/Necropsy") +
+  theme_minimal() +
+  geom_smooth(method = "lm", se = TRUE, color = pokepal("rayquaza", spread = 1), fullrange = TRUE) +
+  theme(
+    axis.title.x = element_text(size = 10, hjust = 0.5, margin = margin(t = 20, b = 10)),
+    axis.title.y = element_text(size = 10, angle = 90, hjust = 0.5, margin = margin(t = 20, b = 10)),
+    legend.position = "none")
+
+print(scatter_plot_normal)
+
+model <- lm(value.y ~ value.x, data = merged_df)
+summary(model)
 
 ```
 
@@ -528,65 +512,6 @@ bottom1SD_spp <- df_z_nooutlier %>%
   select(label_family,Species,value)
 
 ```
-```{r}
-
-# family_names <- unique(cancer_traits_filt$family)
-# 
-# get_uid <- function(family_name) {
-#   # Try fetching UID for species
-#   uid <- tryCatch({
-#     ggimage::phylopic_uid(family_name)
-#   }, error = function(e) {
-#     return(NULL) # return NULL on error
-#   })
-#   return(uid)
-# }
-# 
-# for uid in 
-# 
-# fam_uids <- sapply(family_names, get_uid)
-# 
-# header_images <- paste0('<img src="', primate_images, '" height="50px">') %>%
-#   paste(collapse = " ")
-
-
-```
-
-```{r top_bottom table with animals fig}
-# 
-# # Load the ggplot2 library
-# library(ggplot2)
-# 
-# # Combine the data
-# combined_data <- rbind(
-#   transform(top1SD_spp, category = "Top Species"),
-#   transform(bottom1SD_spp, category = "Bottom Species")
-# )
-# 
-# combined_data$Species <- gsub("_", " ", combined_data$Species)
-# 
-# # Load necessary libraries
-# library(gt)
-# 
-# combined_data %>%
-#   gt() %>%
-#   tab_header(title = “PRIMATES NEOPLASY ANALSYS”) %>%
-#   cols_label(
-#     Species = 'Species',
-#     neoplasia_prevalence = 'Neoplasia Prevalence') %>%
-#   tab_spanner(
-#     label = md('**Top Species**') %>% 
-#   tab_style(
-#     style = list(cell_fill(color = “#b2f7ef”),
-#     cell_text(weight = “bold”)),
-#     locations = cells_body(columns = mpg))%>%
-#   tab_style(
-#     style = list(cell_fill(color = “#ffefb5”),
-#     cell_text(weight = “bold”)), 
-#     locations = cells_body(columns = hp))
-
-```
-
 ## Continous variable analysis
 
 ```{r, fig.height = 15, fig.width = 15, dev = 'svg'}
@@ -607,4 +532,26 @@ cor_numer <- cancer_traits_filt %>%
 #  Correlation plot
 corrplot.mixed(cor_numer, number.digits = 2, tl.col = "black") # Set the color of text labels for correlation numbers
 
+
 ```
+## Extract table with tops bottoms and binary value
+```{r}
+
+combined_data <- rbind(
+  transform(top1SD_spp, category = "Top Species"),
+  transform(bottom1SD_spp, category = "Bottom Species")
+)
+
+extreme_table <- combined_data  %>%
+  select(Species,category)
+
+extreme_table
+
+extreme_table <- extreme_table %>%
+  mutate(category = ifelse(category == "Top Species", 0, 1))
+
+extreme_table
+
+write.table(extreme_table, file.path(resultsDir, "4.CAAS_analysis/config.tab"), sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+```
+

@@ -2,7 +2,9 @@
 title: "data_preparation"
 author: "Miguel Ramon"
 date: "`r Sys.Date()`"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ################################## 
@@ -20,7 +22,13 @@ output: html_document
 knitr::opts_knit$set(root.dir = "/home/rstudio/NEOPLASY_PRIMATES")
 knitr::opts_chunk$set(engine.path = list(
 python = '/home/rstudio/NEOPLASY_PRIMATES/TreeCluster/venv/bin/python'))
+getwd()
 
+```
+
+## Directory definition
+
+```{r dirdef}
 workingDir <- getwd()
 dataDir <- file.path(workingDir, "Data")
 resultsDir <- file.path(workingDir,"Out") 
@@ -39,34 +47,17 @@ getwd()
 set.seed(1998)
 
 # General use libraries
-library(ape)
-library(RRphylo)
 library(phytools)
-library(reticulate)
-
-# Non-concordant species retrieval 
-library(stringdist)
-library(taxize)
-library(R.utils)
-
-# Sort distances chunk
-library(TreeTools)
-library(adephylo)
-library(castor)
-
-# Cluster merging
 library(dplyr)
+library(castor)
+library(tidyr)
 
 # Plotting
 library(ggplot2)
-library(tidyr)
-library(dplyr)
-library(viridis)
 library(ggtree)
-library(RColorBrewer)
-library(svglite)
-library(aplot)
-library(patchwork)
+
+# Colors
+library(microViz)
 
 ```
 
@@ -74,7 +65,7 @@ library(patchwork)
 
 ```{r}
 
-primates_tree <- read.newick("Data/233-GENOMES/science.abn7829_data_s4.nex.tree")
+primates_tree <- read.newick(file.path(dataDir,"233-GENOMES/science.abn7829_data_s4.nex.tree"))
 
 # Give a name to species name attribute
 tree_species <- primates_tree$tip.label
@@ -104,6 +95,7 @@ cancer_traits <- cancer_traits %>%
 
 #### Remove spaces at the end, work out name dissimilarities and stuff like that
 ```{r simple tree prunning}
+
 common_names <- intersect(primates_tree$tip.label, cancer_traits$label)
 
 direct_matches <- cancer_traits$label %in% tree_species
@@ -118,27 +110,14 @@ cancer_traits <- cancer_traits %>%
   arrange(ordering)  %>%
   filter(!is.na(ordering))
 
-```
-
-```{r to be removed}
-
-# # Remove any whitespaces at the end of the cells
-# cancer_traits[] <- lapply(cancer_traits, function(col) trimws(col))
-# 
-# # Binarize species name for standarization
-# cancer_traits$SPECIES_BINOMIAL <- gsub(" ", "_", cancer_traits$species)
-# 
-# # Export binzarized traitfile for posterior use
-# write.csv(cancer_traits, file="Out/1.Pruning/cancer_species_traitfile.csv")
-# 
-# # Need to name the object to work wit it
-# cancer_species_bin <- cancer_traits$SPECIES_BINOMIAL 
+write.tree(tree, file="Out/1.Pruning/tree_pruning/science.abn7829_data_s4.nex.tree.pruned")
 
 ```
+
 
 #### Dissimilarities between the two namesets (tree and traits)
 
-```{r to be very removed}
+```{r to be very removed, eval=FALSE, include=FALSE}
 # 
 # # Function to retrieve synonyms for a species from ITIS
 # # Simplified Function to retrieve accepted name for a species from ITIS
@@ -215,28 +194,12 @@ cancer_traits <- cancer_traits %>%
 # ### NOTE THAT SUBSPECIES WERE REMOVED BECAUSE I WAS BECOMING MAD AND THEY ARE NOT RELEVANT TBF
 
 ```
-#### Tree prunning
-
-```{r to be removed, fig.height=40, fig.width=80}
-
-# pruned_tree <- treedataMatch(tree=nw_tree,y=cancer_species_bin)
-# 
-# # Rename the variable for posterior ease of use
-# tree <- pruned_tree$tree
-# sorted_tree <- SortTree(tree, how = "TipLabels", order = TipLabels(tree))
-# 
-# comparePhylo(sorted_tree, nw_tree, plot = TRUE, force.rooted = TRUE)
-
-
-write.tree(tree, file="Out/1.Pruning/tree_pruning/science.abn7829_data_s4.nex.tree.pruned")
-
-```
 
 ### Clustering by branch depth
 
 ##### Revised to do the exploration node-wise
 
-```{r}
+```{r treecluster}
 
 # Get distances from all nodes to root
 sorted_distances <- sort(get_all_distances_to_root(tree))
@@ -359,7 +322,7 @@ write.csv(clusters_unique_expanded, file="Out/2.Clustering/traits_clusters_explo
 ```
 ### Visualizing cluster distribution with species present in the phylogeny and trait values
 
-```{r heatmap, fig.height=18, fig.width=18, dev=}
+```{r heatmap, fig.height=18, fig.width=18, dev="svg"}
 
 # Extracting tip labels order from the phylo object
 ordered_species <- rev(tree$tip.label)
@@ -382,7 +345,6 @@ clusters_long$cut <- factor(clusters_long$cut, levels = ordered_cuts)
 num_clusters <- length(unique(clusters_long$cluster))
 num_families <- length(unique(clusters_unique$family))
 
-library(microViz)
 
 # Combine the colors and levels
 all_colors <- distinct_palette(25)
