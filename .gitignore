@@ -1,16 +1,11 @@
-.Rproj.user
-.Rhistory
-.RData
-.Ruserdata
 Alejandros_Files
-.directory
 Data
-Meeting notes
-Containers/treeviewer.run
-.history/
-.vslongevity_file.discov <- read_delim(file.path(dataDir,"longevity.farre2021.nofilter.tab"), 
-                                           delim = "\t", escape_double = FALSE, 
-                                           trim_ws = TRUE)
-
-code/
-nf_caastools/
+"Meeting notes"
+Out
+nf_caastools/Data
+nf_caastools/Out
+nf_caastools/singularity
+nf_caastools/work
+nf_caastools/.nextflow
+nf_caastools/.git
+nf_caastools/.gitignore
