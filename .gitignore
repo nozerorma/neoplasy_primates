@@ -9,3 +9,4 @@ nf_caastools/work
 nf_caastools/.nextflow
 nf_caastools/.git
 nf_caastools/.gitignore
+.Rprofile
