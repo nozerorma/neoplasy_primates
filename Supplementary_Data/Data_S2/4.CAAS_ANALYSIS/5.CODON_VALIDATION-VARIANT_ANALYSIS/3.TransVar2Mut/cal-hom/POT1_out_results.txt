@@ -1,0 +1,2 @@
+input	transcript	gene	strand	coordinates(gDNA/cDNA/protein)	region	info
+POT1:p.597V	ENST00000357628 (protein_coding)	POT1	-	chr7:g.124825255T>C/c.1789A>G/p.597V	inside_[cds_in_exon_18]	CSQN=Missense;reference_codon=ATT;candidate_codons=GTA,GTC,GTG,GTT;candidate_mnv_variants=chr7:g.124825253_124825255delAATinsTAC,chr7:g.124825253_124825255delAATinsGAC,chr7:g.124825253_124825255delAATinsCAC;aliases=ENSP00000350249;source=Ensembl

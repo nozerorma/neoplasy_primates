@@ -1,0 +1,146 @@
+---
+  title: "rer_analysis"
+author: "Miguel Ramon"
+date: "`r Sys.Date()`"
+output:
+  html_document: default
+pdf_document: default
+---
+  
+  ################################## 
+
+# RER ANALYSIS
+
+### PRIMATES' NEOPLASY PROJECT
+
+### MIGUEL RAMON ALONSO
+
+################################## 
+
+```{r setup}
+
+knitr::opts_knit$set(root.dir = "/home/miguel/TFM/Master_projects/NEOPLASY_PRIMATES")
+knitr::opts_chunk$set(engine.path = list(
+  python = '/home/miguel/TFM/Master_projects/NEOPLASY_PRIMATES/TreeCluster/venv/bin/python'))
+
+```
+
+```{r dirdef}
+
+workingDir <- getwd()
+dataDir <- file.path(workingDir, "Data")
+resultsDir <- file.path(workingDir,"Out") 
+
+```
+
+```{r check-wd}
+
+getwd()
+
+```
+
+### Seed and library loading
+
+```{r,warning=FALSE,message=FALSE}
+
+set.seed(1998)
+library(RERconverge)
+
+```
+
+# Common function
+
+```{r common_functions}
+
+# Function to read TSV files and return data frames
+read_csv_to_df <- function(file) {
+  df <- read.csv(file, sep = "\t")
+  return(df)
+}
+
+createDir <- function(directory) {
+  if (!file.exists(directory)) {
+    dir.create(directory, recursive = TRUE)
+  }
+}
+
+```
+
+# Load my RER_objects
+```{r load_results}
+
+rerDir <- file.path(resultsDir, "7.RERConverge/RERConverge")
+
+rer_trees <- readRDS(file.path(rerDir, "RER_Objects/ALL_FEB23_geneTrees.txt.masterTree.output"))
+rer_matrix <- readRDS(file.path(rerDir, "RER_Objects/neoplasia_prevalence.RERmatrix.output"))
+rer_char2path <- readRDS(file.path(rerDir, "RER_Results/neoplasia_prevalence.char2path.output"))
+
+load(file.path(rerDir,"RER_Traits/neoplasia_prevalence.polished.output"))
+
+```
+
+# Load my RER_results
+```{r load_objects}
+
+# From the different RER analytical options (set by the Winsorize parameters), it was decided to keep the defaults (remove 3 top/bottom extremes both from the RER and the Trait distributions)
+
+rer_results.win3 <- readRDS(file.path(rerDir,"RER_Results/neoplasia_prevalence.continuous.output"))
+
+```
+
+# Extract genes with significative nominal p-value
+
+```{r extract-pval}
+
+rer_results.filtered <- rer_results.win3 %>%
+  filter(P <= 0.05)
+
+filteredPath <- file.path(rerDir, "RER_filtered_pval/")
+createDir(filteredPath)
+
+write.csv(rer_results.filtered, paste0(filteredPath, "rer_filtered_results.tsv"), sep = "\t")
+
+```
+
+# Load GMT annotations for enrichment analysis
+
+```{r load_gmt, message=FALSE, warning=FALSE}
+gmt_path <- "Data/gmt_annotations/"
+gmt_c2 <- paste0(gmt_path, "c2.all.v2023.2.Hs.symbols.gmt")
+gmt_c4 <- paste0(gmt_path, "c4.all.v2023.2.Hs.symbols.gmt")
+gmt_c5 <- paste0(gmt_path, "c5.all.v2023.2.Hs.symbols.gmt")
+gmt_c6 <- paste0(gmt_path, "c6.all.v2023.2.Hs.symbols.gmt")
+gmt_h <- paste0(gmt_path, "h.all.v2023.2.Hs.symbols.gmt")
+
+gmt_files <- list(gmt_c2,gmt_c4,gmt_c5,gmt_c6,gmt_h)
+gmt_list <- list()
+gmt_annotated <- list()
+
+for (i in seq_along(gmt_files)) {
+  gmt_list[[i]] <- read.gmt(gmt_files[[i]])
+  gmt_annotated[[i]] <- list(gmt_list[[i]])
+  names(gmt_annotated[[i]]) <- paste0("MSigDBpathways",i)
+}
+
+```
+
+# Perform enrichment analysis
+
+```{r enrichment_analysis}
+
+rer_stats <- getStat(rer_results.win3)
+
+rer_enrich_results <- list()
+enrichDir <- file.path(rerDir, "RER_Enrich/")
+createDir(enrichDir)
+
+for (i in seq_along(gmt_annotated)){
+  gmt_df <- gmt_annotated[[i]]
+  enrich_RER <- fastwilcoxGMTall(rer_stats, gmt_df, outputGeneVals = TRUE, num.g = 10)
+  
+  enrich_file <- paste0(enrichDir, i, "_enrichment.tsv")
+  write.csv(enrich_RER, enrich_file, sep = "\t")
+  rer_enrich_results[[i]] <- enrich_RER
+}
+
+```

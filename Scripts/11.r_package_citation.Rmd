@@ -1,0 +1,167 @@
+---
+  title: "r_package_citation"
+author: "Miguel Ramon"
+date: "`r Sys.Date()`"
+output:
+  html_document: default
+pdf_document: default
+---
+  
+################################## 
+
+# R PACKAGE CITATION 
+
+### PRIMATES' NEOPLASY PROJECT
+
+### MIGUEL RAMON ALONSO
+
+################################## 
+
+
+### Seed and library loading
+
+# Deduplicate code
+```{r dedup}
+library(dupree)
+
+dupree(files = "11.r_package_citation.Rmd")
+
+```
+
+```{r,warning=FALSE,message=FALSE message=FALSE, r,warning=FALSE}
+
+set.seed(1998)
+
+# General use libraries
+library(phytools)
+library(dplyr)
+library(castor)
+library(tidyr)
+
+# Plotting
+library(ggplot2)
+library(ggtree)
+
+# Colors
+library(microViz)
+
+library(reshape)
+library(tidyr)
+library(compositions)
+library(tibble)
+
+# Graph plotting
+library(svglite)
+library(corrplot)
+library(ggrepel)
+library(ggpubr)
+library(GGally)
+
+# Colors
+library(palettetown)
+
+# Tabbing
+library(gt)
+library(reactable)
+
+# General use libraries
+library(readr)
+library(phytools)
+library(dplyr)
+library(castor)
+library(tidyr)
+library(dplyr)
+
+# Plotting
+library(pheatmap)
+library(ggtree)
+library(ggplot2)
+library(cowplot)
+library(svglite)
+library(patchwork)
+library(gridExtra)
+library(randomcoloR)
+
+# Gene ontology
+library(AnnotationHub)
+library(MeSHDbi)
+library(enrichplot)
+library(DOSE)
+library(msigdbr)
+
+# library(DOSE)
+#library(pathview)
+library(clusterProfiler)
+library(org.Hs.eg.db)
+
+# Colors
+library(palettetown)
+
+# General use libraries
+library(readr)
+library(phytools)
+library(dplyr)
+library(castor)
+library(tidyr)
+library(dplyr)
+
+# Plotting
+library(pheatmap)
+library(ggtree)
+library(ggplot2)
+library(cowplot)
+library(svglite)
+library(patchwork)
+library(gridExtra)
+library(randomcoloR)
+
+# Gene ontology
+library(AnnotationHub)
+library(MeSHDbi)
+library(enrichplot)
+library(DOSE)
+
+# library(DOSE)
+library(clusterProfiler)
+library(org.Hs.eg.db)
+
+# Colors
+library(palettetown)
+
+# RERConverge
+library(RERconverge)
+
+library(ggplot2)
+library(dplyr)
+library(phytools)
+library(ggsignif)
+library(palettetown)
+
+# General use libraries
+library(phytools)
+library(dplyr)
+library(tidyr)
+library(dplyr)
+
+# Plotting
+library(ggtree)
+library(ggplot2)
+library(cowplot)
+library(patchwork)
+library(gridExtra)
+
+# Gene ontology
+library(msigdbr)
+library(enrichplot)
+library(DOSE)
+
+# library(DOSE)
+library(clusterProfiler)
+library(org.Hs.eg.db)
+
+# Colors
+library(palettetown)
+
+```
+
+```{r extract_citations}

@@ -1,0 +1,5 @@
+input	transcript	gene	strand	coordinates(gDNA/cDNA/protein)	region	info
+PCM1:p.1224MV	ENST00000325083 (protein_coding)	PCM1	+	chr8:g.17972414_17972416/c.3670_3672/p.1224	inside_[cds_in_exon_23]	CSQN=Unclassified;aliases=ENSP00000327077;source=Ensembl
+PCM1:p.1224MV	ENST00000327578 (protein_coding)	PCM1	+	chr8:g.17972411_17972413/c.3670_3672/p.1224	inside_[cds_in_exon_23]	CSQN=Unclassified;aliases=ENSP00000328332;source=Ensembl
+PCM1:p.1224MV	ENST00000519253 (protein_coding)	PCM1	+	chr8:g.17972414_17972416/c.3670_3672/p.1224	inside_[cds_in_exon_23]	CSQN=Unclassified;aliases=ENSP00000431099;source=Ensembl
+PCM1:p.1224MV	ENST00000524226 (protein_coding)	PCM1	+	chr8:g.17972411_17972413/c.3670_3672/p.1224	inside_[cds_in_exon_22]	CSQN=Unclassified;aliases=ENSP00000430521;source=Ensembl

@@ -1,0 +1,3 @@
+"","Gene_symbol","discovery.Trait","discovery.Position","discovery.Substitution","discovery.Pvalue","discovery.Pattern","discovery.FFGN","discovery.FBGN","discovery.GFG","discovery.GBG","discovery.MFG","discovery.MBG","discovery.FFG","discovery.FBG","discovery.MS","id2"
+"1","BUB1","cal-hom.tab",126,"Q/HR",0.00031778411638439,"pattern2",3,3,0,0,1,1,"Callithrix_jacchus,Saguinus_imperator,Saguinus_mystax","Callimico_goeldii,Saguinus_geoffroyi,Saguinus_oedipus","Pongo_abelii,Gorilla_gorilla","BUB1@126"
+"2","ERICH3","cal-hom.tab",1278,"AR/T",0.000115432939506,"pattern3",4,3,0,0,0,1,"Callithrix_jacchus,Pongo_abelii,Saguinus_imperator,Saguinus_mystax","Callimico_goeldii,Saguinus_geoffroyi,Saguinus_oedipus","Gorilla_gorilla","ERICH3@1278"

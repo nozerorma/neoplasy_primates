@@ -1,0 +1,6 @@
+input	transcript	gene	strand	coordinates(gDNA/cDNA/protein)	region	info
+FAT1:p.1576V	ENST00000441802 (protein_coding)	FAT1	-	chr4:g.186628237G>A/c.4727C>T/p.1576V	inside_[cds_in_exon_9]	CSQN=Missense;reference_codon=GCC;candidate_codons=GTA,GTC,GTG,GTT;candidate_mnv_variants=chr4:g.186628236_186628237delGGinsTA,chr4:g.186628236_186628237delGGinsCA,chr4:g.186628236_186628237delGGinsAA;aliases=ENSP00000406229;source=Ensembl
+FAT1:p.1576V	ENST00000614102 (protein_coding)	FAT1	-	chr4:g.186628233A>T/c.4728T>A/p.1576V	inside_[cds_in_exon_11]	CSQN=Missense;reference_codon=GTT;candidate_codons=GTA,GTC,GTG;candidate_snv_variants=chr4:g.186628233A>G,chr4:g.186628233A>C;aliases=ENSP00000479573;source=Ensembl
+input	transcript	gene	strand	coordinates(gDNA/cDNA/protein)	region	info
+FAT1:p.1768AM	ENST00000441802 (protein_coding)	FAT1	-	chr4:g.186621282_186621284/c.5302_5304/p.1768	inside_[cds_in_exon_10]	CSQN=Unclassified;aliases=ENSP00000406229;source=Ensembl
+FAT1:p.1768AM	ENST00000614102 (protein_coding)	FAT1	-	chr4:g.186621288_186621290/c.5302_5304/p.1768	inside_[cds_in_exon_12]	CSQN=Unclassified;aliases=ENSP00000479573;source=Ensembl

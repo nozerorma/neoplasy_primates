@@ -1,0 +1,31 @@
+name: tfm-primates-analysis
+channels:
+- bioconda
+- cgr-lab
+- conda-forge
+dependencies:
+- bioconductor-enrichplot
+- bioconductor-ggtree
+- bioconductor-microviz
+- bioconductor-pathview
+- r-base
+- r-castor
+- r-corrplot
+- r-dplyr
+- r-geiger
+- r-ggplot2
+- r-ggpubr
+- r-ggrepel
+- r-ggsignif
+- r-gplots
+- r-gt
+- r-msigdbr
+- r-pheatmap
+- r-phytools
+- r-reactable
+- r-reshape
+- r-svglite
+- r-tidyr
+- r-weights
+- rstudio-desktop
+

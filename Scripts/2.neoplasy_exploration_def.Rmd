@@ -1,0 +1,753 @@
+---
+title: "trait_exploration"
+author: "Miguel Ramon"
+date: "`r Sys.Date()`"
+citations:  
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup}
+
+knitr::opts_knit$set(root.dir = '/home/miguel/IBE-UPF/TFM/Master_projects/NEOPLASY_PRIMATES')
+knitr::opts_chunk$set(engine.path = list(
+python = '/home/miguel/IBE-UPF/TFM/Master_projects/NEOPLASY_PRIMATES/TreeCluster/venv/bin/python'))
+getwd()
+
+```
+
+## Directory definition
+
+```{r dirdef}
+
+workingDir <- "/home/miguel/IBE-UPF/TFM/Master_projects/NEOPLASY_PRIMATES"
+dataDir <- file.path(workingDir, "Data")
+resultsDir <- file.path(workingDir,"Out") 
+
+```
+
+```{r check-wd}
+
+getwd()
+
+```
+
+## Seed and library loading
+
+```{r,warning=FALSE,message=FALSE}
+ 
+set.seed(1998)
+
+# General use libraries
+library(phytools)
+library(dplyr)
+library(reshape)
+library(tidyr)
+library(compositions)
+library(tibble)
+
+# Graph plotting
+library(svglite)
+library(ggplot2)
+library(corrplot)
+library(ggtree)
+library(ggrepel)
+library(ggpubr)
+library(GGally)
+
+# Colors
+library(palettetown)
+
+# Tabbing
+library(gt)
+library(reactable)
+
+```
+
+## Tree import and prunning
+
+```{r tree}
+
+primates_tree <- read.newick(file.path(dataDir,"Phylo-233-GENOMES/science.abn7829_data_s4.nex.tree"))
+tree_species <- primates_tree$tip.label
+
+```
+
+```{r traits}
+
+cancer_traits <- read.csv(file.path(dataDir, "Neoplasia_species360/species360_primates_neoplasia_20230519.csv"), sep = ",", header = TRUE)
+
+# Remove whitespaces
+cancer_traits[] <- lapply(cancer_traits, function(col) trimws(col))
+
+# binarize
+cancer_traits$label <- gsub(" ", "_", cancer_traits$species)
+
+# Reorder and filter species
+cancer_traits <- cancer_traits %>%
+  select(family,species,label,common_name,necropsy_count,neoplasia_necropsy,neoplasia_prevalence, everything()) %>%
+  filter(!is.na(neoplasia_prevalence))
+
+```
+
+```{r pruning}
+
+# Prune the tree as Noelia does
+
+common_names <- intersect(primates_tree$tip.label, cancer_traits$label)
+
+pruned_primates.tree <- drop.tip(primates_tree, setdiff(primates_tree$tip.label, common_names))
+
+cancer_traits <- cancer_traits %>%
+  mutate(ordering = match(label, pruned_primates.tree$tip.label)) %>%
+  arrange(ordering)  %>%
+  filter(!is.na(ordering))
+
+```
+
+```{r statistics}
+
+# Outlier 
+
+cancer_traits_filt <- cancer_traits %>%
+  select(-common_name, -ordering, -species)
+
+cancer_traits_filt <- cancer_traits_filt %>%
+  mutate(across(c(necropsy_count, neoplasia_necropsy, neoplasia_prevalence), as.double))
+
+
+means <- t(cancer_traits_filt[,-which(colnames(cancer_traits_filt) %in% c("family", "label"))] %>% 
+             summarize_all(., mean))
+
+medians <- t(cancer_traits_filt[,-which(colnames(cancer_traits_filt) %in% c("family", "label"))] %>% 
+  summarize_all(., median))
+
+sds <- t(cancer_traits_filt[,-which(colnames(cancer_traits_filt) %in% c("family", "label"))] %>% 
+  summarize_all(., list(sd)))
+
+# MELT the df (longize it)
+melted_dataframe_traits <- melt(cancer_traits_filt, id.vars = c("family", "label"), measure.vars = c("necropsy_count", "neoplasia_necropsy", "neoplasia_prevalence"))
+
+colnames(melted_dataframe_traits) <- c("Family", "Species", "Trait", "value")
+
+# Add stats to the melted df
+for (i in 1:length(melted_dataframe_traits$Species)){
+  if(as.character(melted_dataframe_traits$Trait[i]) %in% rownames(medians)){
+    melted_dataframe_traits$median[i] <- as.numeric(as.character(medians[rownames(medians) == melted_dataframe_traits$Trait[i]]))
+    melted_dataframe_traits$mean[i] <- as.numeric(as.character(means[rownames(means) == melted_dataframe_traits$Trait[i]]))
+    melted_dataframe_traits$sd[i] <- as.numeric(as.character(sds[rownames(sds) == melted_dataframe_traits$Trait[i]]))
+  }}
+
+```
+
+```{r statistics_per_fam}
+
+calculate_stat <- function(stat_fn) {
+  lapply(unique(cancer_traits_filt$family), function(fam) {
+    subset_df <- cancer_traits_filt[cancer_traits_filt$family == fam, ]
+    stats <- subset_df[,-which(colnames(subset_df) %in% c("label", "family"))] %>% 
+               summarize_all(stat_fn)
+    data.frame(family = fam, stats)
+  })
+}
+
+fam_means_list <- calculate_stat(mean)
+fam_medians_list <- calculate_stat(median)
+fam_sds_list <- calculate_stat(sd)
+
+bind_rows_df <- function(list_data) {
+  do.call(rbind, list_data)
+}
+
+fam_means <- bind_rows_df(fam_means_list)
+fam_medians <- bind_rows_df(fam_medians_list)
+fam_sds <- bind_rows_df(fam_sds_list)
+
+for (i in 1:length(melted_dataframe_traits$Species)){
+  current_family <- melted_dataframe_traits$Family[i]
+  current_trait <- as.character(melted_dataframe_traits$Trait[i])
+  
+  if(current_trait %in% colnames(fam_means)){
+    melted_dataframe_traits$mean_fam[i] <- fam_means[fam_means$family == current_family, current_trait]
+    melted_dataframe_traits$median_fam[i] <- fam_medians[fam_medians$family == current_family, current_trait]
+    melted_dataframe_traits$sd_fam[i] <- fam_sds[fam_sds$family == current_family, current_trait]
+  }
+}
+
+
+```
+
+```{r top_bottom definitions}
+
+# Compute top bottom definitions
+# global
+melted_dataframe_traits <- melted_dataframe_traits %>%
+  dplyr::group_by(Trait) %>% 
+  mutate(label = case_when(
+    value < quantile(value, 0.25, na.rm=TRUE) ~ "low_extreme",
+    value > quantile(value, 0.75, na.rm=TRUE) ~ "high_extreme",
+    TRUE ~ "normal")) %>%
+  mutate(outlier = case_when(
+    value < quantile(value, 0.25, na.rm=TRUE) - 1.5 * IQR(value, na.rm=TRUE) ~ paste0("low_outlier_",Trait),
+    value > quantile(value, 0.75, na.rm=TRUE) + 1.5 * IQR(value, na.rm=TRUE) ~ paste0("high_outlier_",Trait),
+    TRUE ~ "no"))
+
+# by family
+melted_dataframe_traits <- melted_dataframe_traits %>%
+  dplyr::group_by(Family, Trait) %>% 
+  mutate(z_score_fam = (value-mean)/sd) %>%
+  mutate(label_family = case_when(
+    value < quantile(value, 0.25, na.rm=TRUE) & value < median ~ "low_extreme",
+    value > quantile(value, 0.75, na.rm=TRUE) & value > median ~ "high_extreme",
+    TRUE ~ "normal"))
+
+spread_df <- melted_dataframe_traits %>%
+  spread(Trait, value)
+
+```
+
+## Histogram visualization for the three traits
+
+```{r histogram}
+
+hist(cancer_traits_filt$necropsy_count, xlab = "Necropsy Count", main = "Histogram of Primates Necropsy Count")
+hist(cancer_traits_filt$neoplasia_necropsy, xlab = "Neoplasia Count", main = "Histogram of Primates Neoplasia Count")
+hist(cancer_traits_filt$neoplasia_prevalence, xlab = "Neoplasia prevalence", main = "Histogram of Primates Neoplasia Prevalence")
+
+```
+
+## Visual distribution of the three traits along the phylogeny
+
+### Outlier highlight
+
+```{r trait distribution, fig.height = 15, fig.width = 15, dev = 'svg'}
+tree_species <- pruned_primates.tree$tip.label
+
+NC <- cancer_traits_filt$necropsy_count
+names(NC) <- tree_species
+NC <- NC[!is.na(names(NC))]
+
+NN <- cancer_traits_filt$neoplasia_necropsy
+names(NN) <- tree_species
+NN <- NN[!is.na(names(NN))]
+
+NP <- cancer_traits_filt$neoplasia_prevalence
+names(NP) <- tree_species
+NP <- NP[!is.na(names(NP))]
+
+# Necropsy Count
+obj_nc<-contMap(pruned_primates.tree, NC, plot = FALSE)
+obj_nc<-setMap(obj_nc, pokepal("kyogre", spread = 4))
+
+plot(obj_nc, fsize = c(1), lwd = c(5), leg.txt = "Necropsy Count - Tree Distribution")
+
+# Neoplasia Count
+obj_nn<-contMap(pruned_primates.tree,NN,plot=FALSE)
+obj_nn<-setMap(obj_nn,pokepal("kyogre", spread = 4))
+plot(obj_nn,fsize=c(1),lwd=c(5),leg.txt="Neoplasia Count - Tree Distribution")
+
+# Neoplasia_prevalence
+obj_np<-contMap(pruned_primates.tree,NP,plot=FALSE)
+obj_np <- setMap(obj_np, scale_fill_brewer(direction = -1))
+plot(obj_np,fsize=c(1),lwd=c(5),leg.txt="Neoplasia Prevalence - Tree Distribution")
+
+```
+
+## Scatterplots
+
+```{r scatterplot, fig.height = 10, fig.width = 15, dev = 'svg'}
+
+# Filter dataframe for x and y values
+df_x <- melted_dataframe_traits[melted_dataframe_traits$Trait == "necropsy_count", ]
+df_y <- melted_dataframe_traits[melted_dataframe_traits$Trait == "neoplasia_prevalence", ]
+
+# Merge them based on a common identifier (assuming you have an 'ID' column)
+merged_df <- merge(df_x, df_y, by=c("Species","Family"))
+
+# Scatterplot
+scatter_plot <- ggplot(data = merged_df, 
+                      aes(x = value.x, y = value.y, color = Family)) + 
+  geom_point(data = subset(merged_df, 
+                      !(outlier.y %in% c("high_outlier_neoplasia_prevalence", "low_outlier_neoplasia_prevalence"))),
+                      size = 4) +  
+  geom_point(data = subset(merged_df, outlier.y %in% c("high_outlier_neoplasia_prevalence", "low_outlier_neoplasia_prevalence")),
+             aes(shape = outlier.y), size = 4) +
+  scale_shape_manual(values = c("high_outlier_neoplasia_prevalence" = 17, "low_outlier_neoplasia_prevalence" = 22)) +
+  geom_text(data = subset(merged_df, outlier.y %in% c("high_outlier_neoplasia_prevalence", "low_outlier_neoplasia_prevalence")),
+            aes(label = Species), nudge_y = 0, nudge_x = 45, size = 6, color = "black") +
+  geom_smooth(method = "lm", se = TRUE, color = pokepal("rayquaza", spread = 1), fullrange = TRUE) +
+  labs(title = "Neoplasia prevalence-Necropsy Correlation Plot")  +
+  labs(x = "Necropsy Count", y = "Neoplasia Prevalence", shape = "Outliers") +
+  theme_minimal() +
+  theme(
+    axis.title.x = element_text(size = 13, hjust = 0.5, margin = margin(t = 20, b = 20)),
+    axis.title.y = element_text(size = 13, angle = 90, hjust = 0.5, margin = margin(l = 20, r = 20)),
+    plot.title = element_text(size = 16, face = "bold", color = pokepal("rayquaza", spread = 1), hjust = 0.5, margin = margin(t = 20, b = 20)),
+    plot.caption = element_text(size = 10, face = "bold", margin = margin(t = 20, b = 20)),
+    legend.position = "right",
+    legend.key.size = unit(1, "cm"), legend.text = element_text(size = 15), legend.title = element_text(size = 15))
+  
+scatter_plot
+
+ggsave(file.path(resultsDir,"3.Phenotype_exploration/Scatter_plot.png"), plot = scatter_plot, width = 15, height = 10, device = "png", dpi = 300)
+
+ggsave(file.path(resultsDir,"3.Phenotype_exploration/Scatter_plot.svg"), plot = scatter_plot, width = 15, height = 10, device = "svg")
+
+# Model summary
+
+model <- lm(value.y ~ value.x, data = merged_df)
+reg_sum <- summary(model)
+
+save(reg_sum, "Out/3.Phenotype_exploration/")
+
+```
+
+## Summary table
+
+```{r table}
+
+# Clean and Summarize the Data
+summary_data <- cancer_traits_filt %>%
+  group_by(family) %>%
+  # Summarize data
+  summarize(
+    n = n(),
+    NP_Mean = mean(neoplasia_prevalence, na.rm = TRUE),
+    NP_Median = median(neoplasia_prevalence, na.rm = TRUE),
+    NP_SD = sd(neoplasia_prevalence, na.rm = TRUE),
+    min_NP = min(neoplasia_prevalence, na.rm = TRUE),
+    max_NP = max(neoplasia_prevalence, na.rm = TRUE))  %>% 
+  
+  # Compute the MLS Limits
+  mutate(NP_Limits = paste(min_NP, "-",max_NP))
+
+summary_data
+write.table(summary_data, file.path(resultsDir, "3.Phenotype_exploration/summary_np.tsv"), row.names = FALSE, col.names = TRUE)
+
+# Use the gt function to create the table
+table_display <- summary_data %>%
+  select(family,n,NP_Mean,NP_Median,NP_SD,NP_Limits) %>%
+  gt() %>%
+  
+  tab_header(title = "Mean NP Computed from our Primate database") %>%
+  
+  # Formatting columns for better display
+  fmt_number(columns = c("NP_Mean", "NP_Median", "NP_SD"), decimals = 2) %>%
+  
+  # Adding and removing table lines
+  tab_options(
+    table.border.top.style = "none",  # Remove the top border
+    table.border.bottom.style = "solid",
+    table.border.bottom.width = 2,
+    column_labels.border.top.style = "double",
+    column_labels.border.bottom.style = "double")
+
+# Display the table
+table_display
+
+```
+
+## Continous variable analysis
+
+```{r, fig.height = 15, fig.width = 15, dev = 'svg'}
+
+# Check continuous variables distribution
+p <- cancer_traits_filt %>% 
+  select(necropsy_count, neoplasia_necropsy, neoplasia_prevalence) %>%
+  ggpairs()
+
+# Select 2 variables, remove missing variables and calculate spearman correlation from them
+cor_numer <- cancer_traits_filt %>% 
+  select(necropsy_count, neoplasia_necropsy, neoplasia_prevalence) %>% # select_if(is.numeric) 
+  drop_na() %>%
+  cor(., method = "spearman") #,use = "pairwise.complete.obs" )
+
+#  Correlation plot
+corrplot.mixed(cor_numer, number.digits = 2, tl.col = "black") # Set the color of text labels for correlation numbers
+
+
+```
+
+## Extract table with tops bottoms and binary value
+
+```{r table top bottoms without taking outliers into account}
+
+df_z <- melted_dataframe_traits[melted_dataframe_traits$Trait == "neoplasia_prevalence", ]
+df_z$median_fam <- factor(df_z$median_fam, levels = unique(df_z$median_fam))
+
+df_z_nooutlier <- df_z[df_z$outlier == "no", ]
+
+top1SD_spp <- df_z_nooutlier %>%
+  filter(label_family == "high_extreme") %>%
+  select(label_family,Species,value)
+
+bottom1SD_spp <- df_z_nooutlier %>%
+  filter(label_family == "low_extreme") %>%
+  select(label_family,Species,value)
+
+```
+
+```{r binarize top bottoms per family}
+
+combined_data <- rbind(
+  transform(top1SD_spp, category = "Top Species"),
+  transform(bottom1SD_spp, category = "Bottom Species")
+)
+
+extreme_table <- combined_data  %>%
+  select(Species,category)
+
+extreme_table
+
+extreme_table <- extreme_table %>%
+  mutate(category = ifelse(category == "Top Species", 0, 1))
+
+extreme_table
+
+write.table(extreme_table, file.path(resultsDir, "4.CAAS_analysis/pre_config.tab"), sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+
+```
+
+## Table
+
+```{r table_const}
+# Let's part from out little combined plot
+## We are going to work with the family extremes first as they seem more robust, although probably we'll have to pass into both criteria (?)
+
+top_fancy_ext_table <- as.data.frame(df_z_nooutlier) %>%
+  filter(label_family == "high_extreme") %>%
+  select(Family,Species,value) %>%
+  arrange(value)
+
+bottom_fancy_ext_table <- as.data.frame(df_z_nooutlier) %>%
+  filter(label_family == "low_extreme") %>%
+  select(Family,Species,value) %>%
+  arrange(value)
+
+fancy_ext_table <- full_join(
+  transform(top_fancy_ext_table, category = "Top Species"),
+  transform(bottom_fancy_ext_table, category = "Bottom Species"))
+
+#colnames(fancy_ext_table) <- c("Family","Species", "Value", "Category")  
+#fancy_ext_table <- select(fancy_ext_table, -cat)
+
+colnames(fancy_ext_table) <- c("Family", "Species", "Value", "Category")
+
+fancy_ext_table$Species <- gsub("_", " ", fancy_ext_table$Species)
+
+fancy_ext_table <- fancy_ext_table %>%
+  group_by(Family) %>%
+  mutate(iterations = n()) %>%
+  ungroup() %>%
+  mutate(final_label = case_when(
+    iterations <= 1 ~ NA,
+    iterations == 2 ~ as.character(Category),
+    iterations > 2 ~ {
+      # Extract the first string from each value in the Species column
+      first_strings <- sub("^(\\w+).*", "\\1", Species)
+      
+      # Check for duplicates based on the first string
+      duplicates <- duplicated(first_strings) | duplicated(first_strings, fromLast = TRUE)
+      
+      # Assign the Category or NA based on the duplicate status
+      as.character(ifelse(duplicates, Category, NA_character_))
+    },
+    TRUE ~ as.character(Category)
+  )) %>%
+  select(-iterations)
+
+print(fancy_ext_table)
+
+extreme_table_pruned <- fancy_ext_table  %>%
+  select(Species,final_label)
+
+extreme_table_pruned
+
+extreme_table_pruned <- extreme_table_pruned %>%
+  mutate(category = ifelse(final_label == "Top Species", 1, 0))
+
+extreme_table_pruned
+
+write.table(extreme_table_pruned, file.path(resultsDir, "4.CAAS_analysis/config-t4.tab"), sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+
+
+```
+
+```{r table_topbottom}
+# Formattable table
+
+contrast_pal <- function(x) rgb(colorRamp(c("lightpink", "red"))(x), maxColorValue = 255)
+
+# Ensure that 'fancy_ext_table' is defined
+# fancy_ext_table <- ...
+
+reactable(
+  fancy_ext_table,
+  columns = list(
+    Value = colDef(style = function(value) {
+                    normalized <- (value - min(fancy_ext_table$Value)) / 
+                                  (max(fancy_ext_table$Value) - min(fancy_ext_table$Value))
+                    color <- contrast_pal(normalized)
+                    return(list(background = color))
+                  })
+  ),
+  wrap = TRUE,
+  borderless = TRUE,
+  outlined = TRUE,
+  groupBy = c("Family", "Category"),
+  defaultSorted = c("Family", "Species", "Category", "Value"),
+  resizable = TRUE,
+  searchable = TRUE
+  )
+
+
+```
+
+## Top-to-bottom plots
+
+```{r top-bottom plot no out def, fig.height = 10, fig.width = 10, dev = 'svg'}
+
+ordered_species <- pruned_primates.tree$tip.label
+ordered_families <- unique(cancer_traits$family)
+
+df_z_nooutlier <- df_z_nooutlier %>%
+  dplyr::group_by(Family, Trait) %>%
+  arrange(factor(Species, levels = ordered_species)) %>%
+  mutate(z_score_fam = (value-mean)/sd) %>%
+  mutate(label_family = case_when(
+    value < quantile(value, 0.25, na.rm=TRUE) & value < median ~ "low_extreme",
+    value > quantile(value, 0.75, na.rm=TRUE) & value > median ~ "high_extreme",
+  TRUE ~ "normal"))
+
+# if only one specimen of the species is found in the dataframe, automatically change its values in label_family to "normal"
+## Now we can do this only with those species which we have chosen as top and bottom
+top_df_z_def <- as.data.frame(df_z_nooutlier) %>%
+  filter(label_family == "high_extreme") %>%
+  transform(category = "Top Species")
+
+bottom_df_z_def <- as.data.frame(df_z_nooutlier) %>%
+  filter(label_family == "low_extreme") %>%
+  transform(category = "Bottom Species")
+
+df_z_def <- as.data.frame(full_join(top_df_z_def, bottom_df_z_def)) %>%
+  dplyr::group_by(Family, Species) %>%
+  arrange(factor(Species, levels = ordered_species))
+
+df_z_def$Species <- gsub("_", " ", df_z_def$Species)
+
+
+df_z_def <- df_z_def %>%
+  group_by(Family) %>%
+  mutate(iterations = n()) %>%
+  ungroup() %>%
+  mutate(final_label = case_when(
+    iterations <= 1 ~ NA,
+    iterations == 2 & Family == "Cebidae" ~ NA,
+    TRUE ~ as.character(label_family)
+  )) %>%
+  select(-iterations)
+
+df_z_def
+
+# Plot without outliers and no tops bottoms for single fam individuals
+
+plot_tb_def <- ggplot(data = df_z_nooutlier,
+      aes(x = value, y = factor(Family, levels = ordered_families))) +
+      geom_point(data = subset(df_z_nooutlier, label_family %in% c("low_extreme", "normal", "high_extreme")),
+      aes(shape = label_family, color = Family), size = 5) +
+      geom_point(data = subset(df_z_def, final_label %in% c("low_extreme", "high_extreme")),
+      aes(shape = label_family, color = Family, fill = Family), size = 5) +
+      scale_shape_manual(values = c("low_extreme" = 22, "normal" = 21, "high_extreme" = 24)) +
+      stat_summary(fun.x = median, geom = "errorbar",
+      aes(xmax = after_stat(x), xmin = after_stat(x)), linewidth = 1.5, color = pokepal("rayquaza", spread = 1)) +
+      geom_vline(aes(xintercept = median), linewidth = 2, color = "darkred") +
+      geom_text_repel(data = subset(df_z_def, final_label %in% c("low_extreme", "high_extreme")),
+      aes(label = Species), size = 5, segment.size  = 0.3, segment.color = "darkred", min.segment.length = 0, max.segment.length = 0.005, position = position_nudge_repel(x=0.01), force = 5, direction = "both", box.padding = 2, seed = 1998) +
+      labs(title = "Neoplasia Prevalence Distribution by Families", 
+           subtitle = "Top-bottom visualization without outliers", 
+           caption = "Criteria: Over/under global median, 1st and 3rd family quantiles, no outliers")  +
+      labs(x = "Neoplasia Prevalence", y = "") +
+  theme_minimal() +  
+  theme(
+    axis.text.y = element_text(size = 17),
+    axis.title.x = element_text(size = 15, hjust = 0.5, margin = margin(t = 20, b = 20)),
+    axis.title.y = element_text(size = 15, angle = 90, hjust = 0.5, margin = margin(l = 20, r = 20)),
+    plot.title = element_text(size = 20, face = "bold", color = "black", hjust = 0.5, margin = margin(t = 20, b = 10)),
+    plot.subtitle = element_text(size = 15, face = "bold", color = "black", hjust = 0.5, margin = margin(t = 20, b = 10)),
+    plot.caption = element_text(size = 15, face = "bold", margin = margin(t = 10, b = 20)),
+    legend.position = "none")
+
+
+plot_tb_def
+
+ggsave(file.path(resultsDir,"3.Phenotype_exploration/quant-dotplot-fams-def/Def_plot.png"), plot = plot_tb_def, width = 10, height = 10, device = "png", dpi = 300)
+
+ggsave(file.path(resultsDir,"3.Phenotype_exploration/quant-dotplot-fams-def/Def_plot.svg"), plot = plot_tb_def, width = 10, height = 10, device = "svg")
+
+ggsave(file.path(resultsDir,"3.Phenotype_exploration/quant-dotplot-fams-def/Def_plot.tiff"), plot = plot_tb_def, width = 10, height = 10, device = "tiff")
+
+```
+
+
+## Noelia's trait distribution graphs
+
+```{r visualdistribution_noelia, fig.height = 15, fig.width = 15, dev = 'svg'}
+ordered_species <- rev(pruned_primates.tree$tip.label)
+pruned_primates.tree2 <- as_tibble(pruned_primates.tree)
+
+tree <- ape::rotateConstr(pruned_primates.tree, ordered_species)
+
+
+# mapping external data to the tree structure
+primates_traits2 <- spread_df
+primates_traits2 <- primates_traits2[!is.na(primates_traits2$neoplasia_prevalence), ]
+
+new_names <- colnames(primates_traits2)
+new_names[2] <- "label"
+new_names[9] <- "label_general"
+
+colnames(primates_traits2) <- new_names
+
+pruned_primates.tree2 <- full_join(pruned_primates.tree2, primates_traits2, by = 'label') 
+pruned_primates.tree2
+
+# the tbl_tree object is converted to a treedata object
+pruned_primates.tree3 <- tidytree::as.treedata(pruned_primates.tree2)
+ape::plot.phylo(pruned_primates.tree)
+ape::axisPhylo()  
+mtext("Million Years before present", side = 1, line = 3)
+```
+
+```{r, fig.height = 13, fig.width = 26, dev = 'svg'}
+
+# Distribution of internal nodes
+nodes <- c(59, 72, 73, 75, 90, 91, 105, 101, 104, 96, 102)
+
+pruned_primates.tree4 <- groupClade(pruned_primates.tree3, nodes)
+
+
+p <- ggtree(pruned_primates.tree4, 
+            aes(color = group, na.value = "black"), 
+            ladderize = FALSE,
+            size = 2)
+  # geom_tiplab(aes(label=node)) +
+  # geom_nodelab(aes(label=node))
+p
+
+
+
+# This collapse tree by family
+famtree <- p %>%
+  ggtree::collapse(node = 105) %>%
+  ggtree::collapse(node = 102) %>%
+  ggtree::collapse(node = 104) %>%
+  ggtree::collapse(node = 96) %>%
+  ggtree::collapse(node = 91) %>%
+  ggtree::collapse(node = 75) %>%
+  ggtree::collapse(node = 73) %>%
+  ggtree::collapse(node = 72) %>%
+  ggtree::collapse(node = 59)
+
+famtree <- flip(famtree, 47, 102)
+
+famtree2 <- famtree + 
+  geom_nodelab(aes(subset = !(group == 0) & !(group == 5) & !(group == 8)), linetype = "solid", align = TRUE, linesize = 2) +
+  theme(
+    legend.position = "none",
+    plot.margin = unit(c(0, 0, 1, 0), "cm"))
+
+famtree2
+
+combined_plotie <- famtree2 + plot_tb_def
+combined_plotie
+
+# Save tree
+ggsave(file.path(resultsDir,"3.Phenotype_exploration/famtree.png"), plot = famtree2, width = 10, height = 10, dpi = 300, device = "png")
+
+# Save combi
+ggsave(file.path(resultsDir,"3.Phenotype_exploration/quant-dotplot-fams-def/Top_bottom_def_withphylo.png"), plot = combined_plotie, width = 23, height = 18, dpi = 300, device = "png")
+
+ggsave(file.path(resultsDir,"3.Phenotype_exploration/quant-dotplot-fams-def/Top_bottom_def_withphylo.svg"), plot = combined_plotie, width = 23, height = 18, device = "svg", limitsize = FALSE)
+
+
+```
+
+### Depict trait values on phylogeny
+
+```{r phenotype differences family visualization, fig.height = 15, fig.width = 15, dev = 'svg'}
+# Exclude outlier from trait representation
+
+primates_traits2$outlier <- ifelse(primates_traits2$outlier == "high_outlier_neoplasia_prevalence", NA, primates_traits2$neoplasia_prevalence)
+
+primates_lq_tree2 <- primates_traits2 %>% 
+  column_to_rownames(var = "label") %>% 
+  select(outlier)
+
+circ <- ggtree(pruned_primates.tree3, layout = "circular") +
+  geom_tree(aes(color = Family), size = 1.5)
+circ
+
+p3 <- gheatmap(circ, primates_lq_tree2, offset = .8, width = .2, colnames_angle = 95, colnames = FALSE) +
+  scale_fill_gradient(low = "lightgray", high = "indianred3", name = "Neoplasia prevalence", na.value = "mediumorchid4") +
+  theme(legend.key.size = unit(1, "cm"), legend.text = element_text(size = 15), legend.title = element_text(size = 15))
+
+p3
+
+
+
+# save plot
+ggsave(file.path(resultsDir,"3.Phenotype_exploration/Tree_dist_dendrogram/ggtree_np_dist_fam.svg"), plot = p3, width = 15, height = 15, device = 'svg')
+
+ggsave(file.path(resultsDir,"3.Phenotype_exploration/Tree_dist_dendrogram/ggtree_np_dist_fam.png"), plot = p3, width = 15, height = 15, dpi = 300, device = 'png')
+```
+
+
+```{r phenotype differences family visualization, fig.height = 15, fig.width = 20, dev = 'svg'}
+
+rect <- ggtree(pruned_primates.tree3, ladderize = FALSE) +
+  geom_tiplab(size = 5, nudge_x = 5) +  # Increase tip label size and adjust position
+  geom_tree(aes(color = neoplasia_prevalence), size = 1.5) +
+  scale_color_gradient(low = "lightgray", high = "indianred3", na.value = "lightgray") +
+  labs(color = "Neoplasia prevalence") +
+  coord_cartesian(clip = 'off') + 
+  theme_tree2(plot.margin = margin(6, 150, 6, 6),  # Adjust right margin to make space for legend
+              legend.key.size = unit(1, "cm"), 
+              legend.text = element_text(size = 15), 
+              legend.title = element_text(size = 15),
+              legend.position = "right",
+              legend.background = element_blank()) +
+  theme(legend.margin = margin(0, 0, 0, 200)) 
+
+
+rect
+
+ggsave(file.path(resultsDir,"3.Phenotype_exploration/Tree_dist_dendrogram/ggtree_np_dist_sp.svg"), plot = rect, width = 15, height = 12, device = 'svg')
+
+ggsave(file.path(resultsDir,"3.Phenotype_exploration/Tree_dist_dendrogram/ggtree_np_dist_sp.png"), plot = rect, width = 15, height = 12, dpi = 300, device = 'png')
+
+```
+```{r fam_sp_rapport}
+
+p <- ggplot(family_species_rapport, aes(x = Family, y = Species))+
+  geom_col(aes(fill = Family), width = 0.7) +
+  labs(x = "Family", y = "Species per family") +
+  geom_text(
+    aes(label = Species),
+    hjust = 0,
+    nudge_y = 0.5,
+    colour = "black",
+    size = 3
+  ) +
+  theme_minimal() +  
+  theme(
+    axis.text.y = element_text(size = 12),
+    axis.title.x = element_text(size = 15, hjust = 0.5, margin = margin(t = 20, b = 20)),
+    axis.title.y = element_text(size = 15, angle = 90, hjust = 0.5, margin = margin(l = 20, r = 20)),
+    plot.title = element_text(size = 20, face = "bold", color = "black", hjust = 0.5, margin = margin(t = 20, b = 10)),
+    plot.subtitle = element_text(size = 15, face = "bold", color = "black", hjust = 0.5, margin = margin(t = 20, b = 10)),
+    plot.caption = element_text(size = 15, face = "bold", margin = margin(t = 10, b = 20)),
+    legend.position = "none")
+
+p + coord_flip()
+```

@@ -1,0 +1,156 @@
+---
+  title: "Cancer_database_curation"
+author: "Miguel Ramon"
+date: "`r Sys.Date()`"
+output:
+  html_document: default
+pdf_document: default
+---
+  
+  ################################## 
+
+# CANCER DATABASE CURATION
+
+### PRIMATES' NEOPLASY PROJECT
+
+### MIGUEL RAMON ALONSO
+
+################################## 
+
+```{r setup}
+
+knitr::opts_knit$set(root.dir = "/home/miguel/TFM/Master_projects/NEOPLASY_PRIMATES")
+knitr::opts_chunk$set(engine.path = list(
+  python = '/home/miguel/TFM/Master_projects/NEOPLASY_PRIMATES/TreeCluster/venv/bin/python'))
+
+```
+
+```{r dirdef}
+
+workingDir <- getwd()
+dataDir <- file.path(workingDir, "Data")
+resultsDir <- file.path(workingDir,"Out") 
+
+```
+
+```{r check-wd}
+
+getwd()
+
+```
+
+### Seed and library loading
+
+```{r,warning=FALSE,message=FALSE}
+
+set.seed(1998)
+library(dplyr)
+library(tidyr)
+
+```
+
+# Common function
+
+```{r common_functions}
+
+# Function to read TSV files and return data frames
+read_csv_to_df <- function(file) {
+  df <- read.csv(file, sep = "\t")
+  return(df)
+}
+
+createDir <- function(directory) {
+  if (!file.exists(directory)) {
+    dir.create(directory, recursive = TRUE)
+  }
+}
+
+```
+
+# Read cancer db
+
+```{r cancer_db}
+db_path <- file.path(dataDir, "Driver_genes_db")
+
+# CIViC
+civic_db <- read.csv(file.path(db_path, "civic_1-12-23.tsv"), sep = "\t")
+
+# COSMIC
+cosmic_db <- read.csv(file.path(db_path, "cosmic_28-11-23.tsv"), sep = "\t")
+  cosmic_tsg <- cosmic_db %>%
+    filter(grepl("TSG", Role.in.Cancer)) 
+  
+  cosmic_oncogene <- cosmic_db %>%
+    filter(grepl("oncogene", Role.in.Cancer))
+  
+# DOCM
+docm_db <- read.csv(file.path(db_path, "docm_3.2.tsv"), sep = "\t")
+
+# INTOGEN  
+intogen_db <- read.csv(file.path(db_path, "intogen-filtered_31-05-23.tsv"), sep = "\t")
+
+# OncoKB
+oncokb_db <- read.csv(file.path(db_path, "oncokb_11-13-23.tsv"), sep = "\t")
+
+  oncokb_tsg <- oncokb_db %>%
+    filter(Is.Tumor.Suppressor.Gene == "Yes")
+  
+  oncokb_oncogene <- oncokb_db %>%
+    filter(Is.Oncogene == "Yes")
+
+# TSG_DB
+tsg_db <- read.csv(file.path(db_path, "Human_TSGs-2016.tsv"), sep = "\t")
+
+
+# Make the database
+    
+oncogene_db <- intogen_db %>%
+  distinct(SYMBOL)
+
+oncogene_db <- bind_rows(
+  oncogene_db,
+  civic_db %>%
+    anti_join(intogen_db, by = c("name" = "SYMBOL")) %>%
+    select(SYMBOL = name),
+  cosmic_oncogene %>%
+    anti_join(intogen_db, by = c("Gene.Symbol" = "SYMBOL")) %>%
+    select(SYMBOL = Gene.Symbol),
+  # docm_db %>%
+  #   anti_join(intogen_db, by = c("gene" = "SYMBOL")) %>%
+  #   select(SYMBOL = gene),
+  oncokb_oncogene %>%
+    anti_join(intogen_db, by = c("Hugo.Symbol" = "SYMBOL")) %>%
+    select(SYMBOL = Hugo.Symbol)
+  # tsg_db %>%
+  #   anti_join(intogen_db, by = c("GeneSymbol" = "SYMBOL")) %>%
+  #   select(SYMBOL = GeneSymbol)
+)
+
+oncogene_db <- unique(sort(oncogene_db$SYMBOL))
+
+# Write our database to file
+
+oncodb_path <- file.path(db_path, "combined_oncodb.txt")
+write.table(oncogene_db, oncodb_path, quote = FALSE, row.names = FALSE, col.names = FALSE)
+```
+
+
+```{r cancer_background_4enrichment}
+# Check our coincident genes from our universe and the oncogene dataset
+caas_universe <- read.table("Data/Gene_background/gene_background.txt")
+caas_universe <- caas_universe$V1
+
+coincident_bg <- intersect(caas_universe, oncogene_db)
+coincident_path <- "Out/17.Enrichments/Gene_enrichment_in_coincidents/coincident_bg.txt"
+write(coincident_bg, coincident_path)
+
+```
+
+```{r}
+
+coincident_bg <- read.table("Out/17.Enrichments/Gene_enrichment_in_coincidents/coincident_bg.txt")
+li
+
+```
+
+

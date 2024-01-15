@@ -1,0 +1,205 @@
+a---
+title: "gene_analysis"
+author: "Miguel Ramon"
+date: "`r Sys.Date()`"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+################################## 
+
+# GENE ANALYSIS
+
+### PRIMATES' NEOPLASY PROJECT
+
+### MIGUEL RAMON ALONSO
+
+################################## 
+
+```{r setup}
+
+knitr::opts_knit$set(root.dir = "/home/miguel/TFM/Master_projects/NEOPLASY_PRIMATES")
+knitr::opts_chunk$set(engine.path = list(
+python = '/home/miguel/TFM/Master_projects/NEOPLASY_PRIMATES/TreeCluster/venv/bin/python'))
+
+```
+
+```{r dirdef}
+
+workingDir <- getwd()
+dataDir <- file.path(workingDir, "Data")
+resultsDir <- file.path(workingDir,"Out") 
+
+```
+
+```{r check-wd}
+
+getwd()
+
+```
+
+### Seed and library loading
+
+```{r,warning=FALSE,message=FALSE}
+
+set.seed(1998)
+
+# General use libraries
+library(readr)
+library(phytools)
+library(dplyr)
+library(castor)
+library(tidyr)
+library(dplyr)
+
+# Plotting
+library(pheatmap)
+library(ggtree)
+library(ggplot2)
+library(cowplot)
+library(svglite)
+library(patchwork)
+library(gridExtra)
+library(randomcoloR)
+
+# Gene ontology
+library(AnnotationHub)
+library(MeSHDbi)
+library(enrichplot)
+library(DOSE)
+
+# library(DOSE)
+library(clusterProfiler)
+library(org.Hs.eg.db)
+
+# Colors
+library(palettetown)
+
+```
+
+# Join CAAS discovery 3-8
+
+```{r scenarios_df_combine, message=FALSE, warning=FALSE}
+
+## Directly import the 
+# Directory path
+scenario_dfs_path <- "Out/4.CAAS_analysis/CAASresults/14-11-run/Genes_tables"
+
+# Get a list of all TSV files in the directory and its subdirectories
+scenario_tsv_files <- list.files(path = scenario_dfs_path, pattern = "\\.tsv$", full.names = TRUE, recursive = FALSE)
+
+# Function to read TSV files and return data frames
+read_tsv_to_df <- function(file) {
+  df <- read_tsv(file)
+  return(df)
+}
+
+# Use lapply to read all TSV files into a list of data frames
+combined_dfs <- setNames(lapply(scenario_tsv_files, read_tsv_to_df), tools::file_path_sans_ext(basename(scenario_tsv_files)))
+
+# Print the list of data frames
+print(combined_dfs)
+
+```
+
+# Join OncoVar results
+
+```{r combine_oncovar}
+
+# Directory path
+oncovar_dfs_path <- "Out/5.OncoVar/"
+
+# Get a list of all TSV files in the directory and its subdirectories
+oncovar_csv_files <- list.files(path = oncovar_dfs_path, pattern = "\\.csv$", full.names = TRUE, recursive = FALSE)
+
+# Function to read TSV files and return data frames
+read_csv_to_df <- function(file) {
+  df <- read_csv(file)
+  return(df)
+}
+
+# Use lapply to read all TSV files into a list of data frames
+oncovar_dfs <- setNames(lapply(oncovar_csv_files, read_csv_to_df), tools::file_path_sans_ext(basename(oncovar_csv_files)))
+
+# Print the list of data frames
+print(oncovar_dfs)
+
+```
+
+# Filter OncoVar data
+
+```{r filter_oncovar}
+oncovar_filtered.l <- list()
+driver_level <- 3:4
+consensus_score <- 10:1000
+
+
+for (oncovar_name in names(oncovar_dfs)){
+  oncovar_df <- oncovar_dfs[[oncovar_name]]
+  
+  # Filter out genes which are in levels 3 (Probably pathologic) or 4 (Pathologic) according to OncoVar
+  oncovar_filt <-  oncovar_df[oncovar_df$Consensus_Score %in% consensus_score, ]
+  oncovar_filtered.l[[oncovar_name]] <- oncovar_filt
+  
+  #Extract genes for visualization
+  genes <- sort(oncovar_filt$Gene_symbol)
+
+  cat(paste("For scenario", oncovar_name, ":\n"))
+  cat(genes, "\n")
+  
+}
+```
+
+
+```{r filter_oncovar}
+# Assuming "Gene_symbol" and "discovery.Gene" are the respective column names
+common_column_oncovar <- "Gene_symbol"
+common_column_combined <- "discovery.Gene"
+
+result_dfs <- list()
+
+for (oncovar_name in names(oncovar_filtered.l)) {
+  #var1 <- combined_dfs.05[[oncovar_name]][, common_column_combined]
+  #var2 <- oncovar_filtered.l[[oncovar_name]][, common_column_oncovar]
+  condition <- oncovar_filtered.l[[oncovar_name]][, common_column_oncovar] %in% combined_dfs.05[[oncovar_name]][, common_column_combined]
+  result_df <- combined_dfs.05[[oncovar_name]][condition, ]
+  
+  # Specify the file path where you want to save the tsv file
+  file_path <- file.path(resultsDir, paste0("5.OncoVar/Results_coincident/", oncovar_name, ".tsv"))
+  
+  # Write the data frame to a tsv file
+  write.table(result_df, file = file_path, sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
+  
+  
+  # Store the result in a list
+  result_dfs[[oncovar_name]] <- result_df
+  
+}
+```
+
+
+```{r filter_oncoVEP}
+
+# Load our OncoDB_universe list
+oncodb_path <- file.path("Data/Driver_genes_db/combined_oncodb.txt")
+oncodb <- read.table(oncodb_path)
+
+onco_filtered <- list()
+onco_path <- "Out/13.Filtered_oncodb/"
+createDir(onco_path)
+
+# Cross check our genes with the oncodb
+for (scenario in names(combined_dfs)){
+  scenario_df <- combined_dfs[[scenario]]
+  
+  scenario_filt <- scenario_df %>%
+    semi_join(oncodb, by = c("discovery.Gene" = "V1"))
+  
+  onco_filtered[[scenario]] <- scenario_filt
+  
+  onco_file <- paste0(onco_path, scenario, ".tsv")
+  write_tsv(scenario_filt, onco_file)
+}
+
+```

@@ -1,0 +1,4 @@
+input	transcript	gene	strand	coordinates(gDNA/cDNA/protein)	region	info
+MST1R:p.743M	ENST00000296474 (protein_coding)	MST1R	-	chr3:g.49896846G>A/c.2228C>T/p.743M	inside_[cds_in_exon_8]	CSQN=Missense;reference_codon=ACG;candidate_codons=ATG;aliases=ENSP00000296474;source=Ensembl
+MST1R:p.743M	ENST00000621387 (protein_coding)	MST1R	-	chr3:g.49896297_49896299delGCTinsATG/c.2227_2229delGCTinsATG/p.743M	inside_[cds_in_exon_8]	CSQN=Missense;reference_codon=GCT;candidate_codons=ATG;aliases=ENSP00000482642;source=Ensembl
+MST1R:p.743M	ENST00000344206 (protein_coding)	MST1R	-	chr3:g.49896846G>A/c.2228C>T/p.743M	inside_[cds_in_exon_8]	CSQN=Missense;reference_codon=ACG;candidate_codons=ATG;aliases=ENSP00000341325;source=Ensembl

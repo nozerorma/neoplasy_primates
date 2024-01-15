@@ -1,0 +1,3 @@
+For /home/miguel/TFM/Master_projects/NEOPLASY_PRIMATES/Out/15.AA2prot/cal-hom.tsv/FAT1_out.csv
+For /home/miguel/TFM/Master_projects/NEOPLASY_PRIMATES/Out/15.AA2prot/cal-hom.tsv/KMT2C_out.csv
+For /home/miguel/TFM/Master_projects/NEOPLASY_PRIMATES/Out/15.AA2prot/cal-hom.tsv/POT1_out.csv

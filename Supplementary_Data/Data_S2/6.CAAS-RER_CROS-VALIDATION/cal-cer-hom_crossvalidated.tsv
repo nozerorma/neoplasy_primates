@@ -1,0 +1,2 @@
+"","Gene_symbol","discovery.Trait","discovery.Position","discovery.Substitution","discovery.Pvalue","discovery.Pattern","discovery.FFGN","discovery.FBGN","discovery.GFG","discovery.GBG","discovery.MFG","discovery.MBG","discovery.FFG","discovery.FBG","discovery.MS","id2"
+"1","UBAP2L","config-t3.tab",17,"HV/A",0.0288986832788611,"pattern3",3,3,0,0,2,2,"Pongo_abelii,Trachypithecus_auratus,Trachypithecus_cristatus","Gorilla_gorilla,Trachypithecus_francoisi,Trachypithecus_obscurus","Saguinus_mystax,Saguinus_imperator,Saguinus_oedipus,Saguinus_geoffroyi","UBAP2L@17"

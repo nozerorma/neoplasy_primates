@@ -1,0 +1,6 @@
+input	transcript	gene	strand	coordinates(gDNA/cDNA/protein)	region	info
+BRCA2:p.415H	ENST00000380152 (protein_coding)	BRCA2	+	chr13:g.32332723T>C/c.1245T>C/p.415H	inside_[cds_in_exon_10]	CSQN=Missense;reference_codon=CAT;candidate_codons=CAC;aliases=ENSP00000369497;source=Ensembl
+BRCA2:p.415H	ENST00000544455 (protein_coding)	BRCA2	+	chr13:g.32332723T>C/c.1245T>C/p.415H	inside_[cds_in_exon_10]	CSQN=Missense;reference_codon=CAT;candidate_codons=CAC;aliases=ENSP00000439902;source=Ensembl
+input	transcript	gene	strand	coordinates(gDNA/cDNA/protein)	region	info
+BRCA2:p.1929V	ENST00000380152 (protein_coding)	BRCA2	+	chr13:g.32340140A>G/c.5785A>G/p.1929V	inside_[cds_in_exon_11]	CSQN=Missense;reference_codon=ATT;candidate_codons=GTA,GTC,GTG,GTT;candidate_mnv_variants=chr13:g.32340140_32340142delATTinsGTA,chr13:g.32340140_32340142delATTinsGTC,chr13:g.32340140_32340142delATTinsGTG;aliases=ENSP00000369497;source=Ensembl
+BRCA2:p.1929V	ENST00000544455 (protein_coding)	BRCA2	+	chr13:g.32340140A>G/c.5785A>G/p.1929V	inside_[cds_in_exon_11]	CSQN=Missense;reference_codon=ATT;candidate_codons=GTA,GTC,GTG,GTT;candidate_mnv_variants=chr13:g.32340140_32340142delATTinsGTA,chr13:g.32340140_32340142delATTinsGTC,chr13:g.32340140_32340142delATTinsGTG;aliases=ENSP00000439902;source=Ensembl

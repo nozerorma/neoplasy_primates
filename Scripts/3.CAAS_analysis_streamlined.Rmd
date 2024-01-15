@@ -1,0 +1,1424 @@
+---
+title: "functional_analysis"
+author: "Miguel Ramon"
+date: "`r Sys.Date()`"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+################################## 
+
+# FUNCTIONAL ANALYSIS
+
+### PRIMATES' NEOPLASY PROJECT
+
+### MIGUEL RAMON ALONSO
+
+################################## 
+
+# # NEED TO CLEAN THIS UP #
+
+```{r setup}
+
+knitr::opts_knit$set(root.dir = "/home/miguel/IBE-UPF/TFM/Master_projects/NEOPLASY_PRIMATES")
+knitr::opts_chunk$set(engine.path = list(
+python = '/home/miguel/TFM/Master_projects/NEOPLASY_PRIMATES/TreeCluster/venv/bin/python'))
+
+```
+
+```{r dirdef}
+
+workingDir <- getwd()
+dataDir <- file.path(workingDir, "Data")
+resultsDir <- file.path(workingDir,"Out") 
+
+```
+
+```{r check-wd}
+
+getwd()
+
+```
+
+### Seed and library loading
+
+```{r,warning=FALSE,message=FALSE}
+
+set.seed(1998)
+
+# General use libraries
+library(readr)
+library(phytools)
+library(dplyr)
+library(castor)
+library(tidyr)
+library(dplyr)
+
+# Plotting
+library(pheatmap)
+library(ggtree)
+library(ggplot2)
+library(cowplot)
+library(svglite)
+library(patchwork)
+library(gridExtra)
+library(randomcoloR)
+
+# Gene ontology
+library(AnnotationHub)
+library(MeSHDbi)
+library(enrichplot)
+library(DOSE)
+library(msigdbr)
+
+# library(DOSE)
+#library(pathview)
+library(clusterProfiler)
+library(org.Hs.eg.db)
+
+# Colors
+library(palettetown)
+
+```
+
+# Create scenario dataframes
+
+```{r scenarios_df, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+# # Define the base path for family directories
+# # Set the path to the directory containing the scenario folders
+# base_path <- "Out/4.CAAS_analysis/CAASresults/14-11-run"
+# 
+# # List all scenario directories
+# scenario_dirs <- list.dirs(path = base_path, full.names = TRUE, recursive = FALSE)
+# 
+# # Initialize an empty list to store data frames
+# combined_dfs <- list()
+# 
+# # Loop through each scenario directory
+# for (scenario_dir in scenario_dirs) {
+#   
+#   # List all discovery folders in the current scenario directory
+#   discovery_dirs <- list.dirs(path = file.path(scenario_dir, "discovery"), full.names = TRUE, recursive = TRUE)
+#   
+#   # Initialize an empty list to store data frames for each gene
+#   gene_dfs <- list()
+#   
+#   # Loop through each discovery directory
+#   for (discovery_dir in discovery_dirs) {
+#     
+#     # List all *.output files in the current discovery directory
+#     gene_outputs <- list.files(path = discovery_dir, pattern = "\\.output$", full.names = TRUE)
+#     
+#     # Initialize an empty list to store data frames for each gene output
+#     gene_output_dfs <- list()
+#     
+#     # Loop through each gene output file
+#     for (gene_output in gene_outputs) {
+#       # Assuming the data in the output file is in a tabular format (e.g., CSV), you can read it into a data frame
+#       gene_output_df <- read_tsv(gene_output)
+#       
+#       # Store the data frame in the list
+#       gene_output_dfs[[basename(gene_output)]] <- gene_output_df
+#     }
+#     
+#     # Combine all gene output data frames into a single data frame
+#     combined_gene_df <- do.call(rbind, gene_output_dfs)
+#     
+#     # Store the combined gene data frame in the list
+#     gene_dfs[[basename(discovery_dir)]] <- combined_gene_df
+#   }
+#   
+#   # Combine all gene data frames into a single data frame for the scenario
+#   combined_scenario_df <- do.call(cbind, gene_dfs)
+#   
+#   # Store the combined scenario data frame in the list
+#   combined_dfs[[basename(scenario_dir)]] <- combined_scenario_df
+#   
+#     # Export the combined scenario data frame to a TSV file
+#   tsv_file_path <- file.path(base_path, paste0(basename(scenario_dir), "_combined.tsv"))
+#   write.table(combined_scenario_df, file = tsv_file_path, sep = "\t", quote = FALSE, row.names = FALSE)
+#   cat("Exported", basename(scenario_dir), "to", tsv_file_path, "\n")
+# }
+# 
+# # Print the names of the combined data frames
+# cat("Combined Data Frames:\n", names(combined_dfs), "\n")
+# 
+# # # To export the different scenarios (uncomment)
+# # for (scenario_name in names(combined_dfs)) {
+# #   combined_scenario_df <- combined_dfs[[scenario_name]]
+# # 
+# #   # Export the combined scenario data frame to a TSV file
+# #   tsv_file_path <- file.path(base_path, paste0(scenario_name, "_combined.tsv"))
+# #   write.table(combined_scenario_df, file = tsv_file_path, sep = "\t", quote = FALSE, row.names = FALSE)
+# #   cat("Exported", scenario_name, "to", tsv_file_path, "\n")
+# # }
+# 
+# # Access a specific combined data frame (replace 'your_scenario_name' with the actual scenario name)
+# # For example, to access the data frame for scenario 'example_scenario':
+# # combined_dfs[['example_scenario']]
+
+```
+
+# Manual DF sortage
+
+```{r scenarios_df_combine, message=FALSE, warning=FALSE}
+
+## Directly import the 
+# Directory path
+scenario_dfs_path <- "Out/4.CAAS_analysis/CAASresults/14-11-run/"
+
+# Get a list of all TSV files in the directory and its subdirectories
+scenario_tsv_files <- list.files(path = scenario_dfs_path, pattern = "\\.tsv$", full.names = TRUE, recursive = FALSE)
+
+# Function to read TSV files and return data frames
+read_tsv_to_df <- function(file) {
+  df <- read_tsv(file)
+  return(df)
+}
+
+# Use lapply to read all TSV files into a list of data frames
+combined_dfs <- setNames(lapply(scenario_tsv_files, read_tsv_to_df), tools::file_path_sans_ext(basename(scenario_tsv_files)))
+
+# Print the list of data frames
+print(combined_dfs)
+
+```
+
+## P-value nomination
+
+```{r p-value}
+
+# Initialize an empty list to store data frames
+combined_dfs.05 <- list()  # New list for filtered data frames
+
+# Loop through each scenario directory
+for (scenario_name in names(combined_dfs)) {
+  combined_scenario_df <- combined_dfs[[scenario_name]]
+  
+  # Filter rows where Pvalue is less than or equal to 0.05 and create id2 column
+  scenario_pval <- combined_scenario_df %>%
+    filter(discovery.Pvalue <= 0.05) %>%
+    mutate(id2 = paste(discovery.Gene, discovery.Position, sep = "@"))
+  
+  # Store the filtered data frame in the scenario_name.05 list
+  combined_dfs.05[[scenario_name]] <- scenario_pval
+  
+  cat("Generated", scenario_name, ".05\n")
+  
+  # If you want to print the filtered data frame, you can use the following line:
+  # print(scenario_pval)
+}
+
+# Access a specific filtered data frame (replace 'your_scenario_name' with the actual scenario name)
+# For example, to access the filtered data frame for scenario 'example_scenario':
+# filtered_df <- scenario_name.05[['example_scenario']]
+
+```
+
+```{r other_spp_traitfile}
+spp_list <- cancer_traits$species
+combined_traitfiles <- list()
+
+# Directory path
+combined_traitfiles_path <- file.path(dataDir, "CAAS_traitfiles")
+
+# Get a list of all TSV files in the directory and its subdirectories
+combined_traitfiles_tsv <- list.files(path = combined_traitfiles_path, pattern = "\\.tab$", full.names = TRUE, recursive = FALSE)
+
+# Function to read TSV files and return data frames
+read_tsv_to_df <- function(file) {
+  df <- read_tsv(file, col_names = FALSE)
+  return(df)
+}
+
+# Use lapply to read all TSV files into a list of data frames
+combined_traitfiles <- setNames(lapply(combined_traitfiles_tsv, read_tsv_to_df), tools::file_path_sans_ext(basename(combined_traitfiles_tsv)))
+
+# Print the list of data frames
+print(combined_traitfiles)
+
+filtered_lists <- list()
+
+for (scenario_name in names(combined_traitfiles)){
+  scenario_df <- combined_traitfiles[[scenario_name]]
+
+  filtered_spp_list <- spp_list[!(spp_list %in% scenario_df$X1)]
+  
+  filtered_path <- file.path(resultsDir, paste0("Out/8.Internal_validation/Other_spp_filtered/", scenario_name, ".filtered_out.tsv"))
+  
+  print(filtered_spp_list)
+  
+  write.table(filtered_spp_list, filtered_path, quote = FALSE, sep = "\n")
+  
+  filtered_lists[[scenario_name]] <- filtered_spp_list
+}
+
+```
+
+## CAAS counting
+
+```{r caas_counts, message=FALSE, warning=FALSE}
+generate_counts_df <- function(df, category, values, key) {
+  counts <- sapply(values, function(value) {
+    sum(df[[category]] == value)
+  })
+
+  counts_df <- data.frame(
+    Category = category,
+    Value = values,
+    Counts = counts,
+    Key = key
+  )
+
+  return(counts_df)
+}
+
+# Initialize an empty list to store counts data frames
+scenario_counts <- list()
+
+# Define values and data frames
+FFGN_values <- c("1", "2", "3", "4", "5", "6", "7", "8")
+FBGN_values <- c("1", "2", "3", "4", "5", "6", "7", "8")
+pattern_values <- c("pattern1", "pattern2", "pattern3")
+
+for (scenario_name in names(combined_dfs)) {
+  scenario_df <- combined_dfs[[scenario_name]]
+
+  # Generate counts data frames for different categories
+  scenario_ffgn <- generate_counts_df(scenario_df, "discovery.FFGN", FFGN_values, "FFGN")
+  scenario_fbgn <- generate_counts_df(scenario_df, "discovery.FBGN", FBGN_values, "FBGN")
+  pattern_counts <- generate_counts_df(scenario_df, "discovery.Pattern", pattern_values, "Pattern")
+
+  # Store each counts data frame in the scenario_counts list
+  scenario_counts[[scenario_name]] <- rbind(
+    scenario_counts[[scenario_name]],
+    scenario_ffgn,
+    scenario_fbgn,
+    pattern_counts
+  )
+  cat("Generated", scenario_name, "counts df \n")
+}
+
+```
+
+## Nominal pvalue counts
+
+```{r pval_counts}
+
+# Initialize an empty list to store counts data frames
+scenario_counts.05 <- list()
+
+for (scenario_name.05 in names(combined_dfs.05)) {
+  scenario_df.05 <- combined_dfs.05[[scenario_name.05]]
+
+  # Generate counts data frames for different categories
+  scenario_ffgn.05 <- generate_counts_df(scenario_df.05, "discovery.FFGN", FFGN_values, "FFGN")
+  scenario_fbgn.05 <- generate_counts_df(scenario_df.05, "discovery.FBGN", FBGN_values, "FBGN")
+  pattern_counts.05 <- generate_counts_df(scenario_df.05, "discovery.Pattern", pattern_values, "Pattern")
+
+  # Store each counts data frame in the scenario_counts list
+  scenario_counts.05[[scenario_name.05]] <- rbind(
+    scenario_counts.05[[scenario_name.05]],
+    scenario_ffgn.05,
+    scenario_fbgn.05,
+    pattern_counts.05
+  )
+  cat("Generated", scenario_name, "counts df (nominal)\n")
+}
+
+```
+## Gene tables
+
+```{r gene_extraction, message=FALSE}
+get_gene_info <- function(data, name, fg, bg) {
+  genes <- data$discovery.Gene[data$discovery.FFGN %in% fg & data$discovery.FBGN %in% bg]
+  cat(paste("For scenario", name, ":\n"))
+  cat(genes, "\n")
+  cat("Length:", length(genes), "\n")
+  cat("Unique Length:", length(unique(genes)), "\n")
+  cat("Duplicated Genes:\n", genes[duplicated(genes)], "\n")
+  return(genes)
+}
+
+scenario_genes <- list()
+
+for (scenario_name in names(combined_dfs)) {
+  scenario_df <- combined_dfs[[scenario_name]]
+
+  fg_values <- 3:8
+  bg_values <- 3:8
+
+  # Generate a unique name for each scenario_genes element
+  scenario_genes_name <- paste0(scenario_name, "_", min(fg_values), "-", max(bg_values))
+
+  # Call get_gene_info with the specified range of values
+  scenario_genes[[scenario_genes_name]] <- get_gene_info(
+    scenario_df,
+    scenario_name,
+    fg = as.character(fg_values),
+    bg = as.character(bg_values)
+  )
+
+  cat("\nGenerated", scenario_genes_name, "gene counts df\n\n\n")
+}
+```
+
+## Gene tables with nominal pvalues
+
+```{r gene_extraction.05, message=FALSE}
+scenario_genes.05 <- list()
+
+for (scenario_name.05 in names(combined_dfs.05)) {
+  scenario_df.05 <- combined_dfs.05[[scenario_name.05]]
+
+  fg_values <- 3:8
+  bg_values <- 3:8
+
+  # Generate a unique name for each scenario_genes element
+  scenario_genes_name.05 <- paste0(scenario_name.05, "_", min(fg_values), "-", max(bg_values))
+
+  # Call get_gene_info with the specified range of values
+  scenario_genes.05[[scenario_genes_name.05]] <- get_gene_info(
+    scenario_df.05,
+    scenario_name.05,
+    fg = as.character(fg_values),
+    bg = as.character(bg_values)
+  )
+
+  cat("\nGenerated", scenario_genes_name, "gene counts df (nominal)\n\n\n")
+}
+
+```
+
+```{r}
+# 
+# for (scenario_name.05 in names(combined_dfs.05)) {
+#   scenario_df.05 <- combined_dfs.05[[scenario_name.05]]
+# 
+#   fg_values <- 3:6
+#   bg_values <- 3:6
+# 
+#   # Generate a unique name for each scenario_genes element
+#   scenario_genes_name_prefix.05 <- paste0(scenario_name.05, "_")
+# 
+#   for (fg_value in fg_values) {
+#     for (bg_value in bg_values) {
+#       # Generate a unique name for each combination
+#       scenario_genes_name.05 <- paste0(scenario_genes_name_prefix.05, fg_value, "-", bg_value)
+# 
+#       # Call get_gene_info with the specific combination of values
+#       scenario_genes.05[[scenario_genes_name.05]] <- get_gene_info(
+#         scenario_df.05,
+#         scenario_name.05,
+#         fg = as.character(fg_value),
+#         bg = as.character(bg_value)
+#       )
+#     }
+#   }
+# }
+
+```
+
+
+```{r gene_extraction.05, message=FALSE}
+# # To export the different scenarios (uncomment)
+
+gene_path <- "Out/4.CAAS_analysis/CAASresults/14-11-run/Genes/"
+
+for (scenario_name in names(scenario_genes.05)) {
+  genes_export_escenario <- scenario_genes.05[[scenario_name]]
+
+  # Export the combined scenario data frame to a TSV file
+  tsv_file_path <- file.path(gene_path, paste0(scenario_name, "_genes_05_L.tsv"))
+  write.table(genes_export_escenario, file = tsv_file_path, sep = "\n", quote = FALSE, row.names = FALSE, col.names = FALSE)
+  cat("Exported", scenario_name, "to", tsv_file_path, "\n")
+}
+
+```
+# Gene vcf generation
+
+```{r generate_vcf}
+scenario_genes.05 <- list()
+
+scenario_genes_vcf.05 <- list()
+
+for (scenario_name.05 in names(combined_dfs.05)) {
+  scenario_df.05 <- combined_dfs.05[[scenario_name.05]]
+  
+  fg_values <- 3:8
+  bg_values <- 3:8
+
+  subset_data <- scenario_df.05[scenario_df.05$discovery.FFGN %in% fg_values & scenario_df.05$discovery.FBGN %in% bg_values, ]
+  
+  scenario_genes_vcf.05[[scenario_name.05]] <- subset_data
+}
+
+gene_path <- "Out/4.CAAS_analysis/CAASresults/14-11-run/Genes_tables/"
+
+
+for (scenario_name in names(scenario_genes_vcf.05)) {
+  genes_export_escenario <- scenario_genes_vcf.05[[scenario_name]]
+
+  # Export the combined scenario data frame to a TSV file
+  tsv_file_path <- file.path(gene_path, paste0(scenario_name, ".tsv"))
+  write.table(genes_export_escenario, file = tsv_file_path, sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
+}
+
+```
+
+# Plots
+## Save graph function
+
+```{r save_graph, fig.height=15, fig.width=15, message=FALSE, warning=FALSE}
+
+# Save the plots
+graph_save <- function(graph_list, graphDir, plotType, figHeight, figWidth) {
+  
+  # Set save dir and create if not exists
+  if (!file.exists(graphDir)) {
+    dir.create(graphDir, recursive = TRUE)
+  }
+  
+  for (scenario_name in names(graph_list)) {
+    ggplot_obj <- graph_list[[scenario_name]]
+    file_path <- file.path(graphDir, paste0(scenario_name, "_", plotType, ".svg"))
+    
+    tryCatch({
+      ggsave(file_path, ggplot_obj, width = figWidth, height = figHeight, device = "svg")
+    }, error = function(e) {
+      # Print an error message or take any other necessary action
+      cat("Error in saving", scenario_name, " ", plotType, "plot:", conditionMessage(e), "\n")
+    })
+  }
+}
+
+
+# GGPlot combine function
+graph_combine <- function(graph_list, combined_list, graphDir, plotType, figHeight, figWidth) {
+  for (scenario_name in names(graph_list)) {
+    ggplot_obj <- graph_list[[scenario_name]]
+    combined_list[[scenario_name]] <- ggplot_obj
+    cat("Generated", scenario_name, "scatterplot for combine\n")
+  }
+
+  # Combine scatterplots into a 3x2 grid
+  combined_grid <- wrap_plots(combined_list, ncol = 3)
+
+  # Save the combined grid with error handling
+  tryCatch({
+    combined_file_path <- file.path(graphDir, paste0("combined_", plotType, ".svg"))
+    ggsave(combined_file_path, combined_grid, width = figWidth, height = figHeight, device = "svg")
+    cat("Saved combined", plotType, "plot at", combined_file_path, "\n")
+  }, error = function(e) {
+    # Print an error message or take any other necessary action
+    cat("Error in saving combined", plotType, "plot:", conditionMessage(e), "\n")
+  })
+}
+
+
+# Pheatmap combine function
+# Combine and Save Heatmaps
+# heatmap_combine_and_save <- function(heatmap_list, graphDir, plotType, width = figWidth, height = figHeight) {
+#   # Set save dir and create if not exists
+#   if (!file.exists(graphDir)) {
+#     dir.create(graphDir, recursive = TRUE)
+#   }
+#   
+#   combined_heatmap <- do.call(pheatmap, c(heatmap_list, list(main = "Combined Heatmap")))
+#   
+#   # Save the combined heatmap
+#   combined_file_path <- file.path(graphDir, paste0("combined_", plotType, ".svg"))
+#   ggsave(combined_file_path, combined_heatmap, width = figWidth, height = figHeight, device = "svg")
+#   cat("Saved combined ", plotType, " heatmap at", combined_file_path, "\n")
+# }
+
+```
+
+## Scatterplot
+
+```{r scatterplot, fig.height=15, fig.width=15, message=FALSE, warning=FALSE, dev=}
+#scenario_scatter <- list()
+scenario_scatter.05 <- list()
+
+
+for (scenario_name in names(combined_dfs.05)) {
+  scenario_df <- combined_dfs.05[[scenario_name]]
+  
+  # Calculate the maximum values for x and y
+  max_x <- max(scenario_df$discovery.FFGN)
+  max_y <- max(scenario_df$discovery.FBGN)
+
+  # Combine genes for each scenario into a single data frame
+  scenario_ggscatter <- ggplot(scenario_df, aes(x = discovery.FFGN, y = discovery.FBGN)) +
+  geom_jitter(width = 0.3, height = 0.3, size = 3, color = pokepal("rayquaza", spread = 1)) +
+  labs(title = paste0("CAAS by FFGN and FBGN (", scenario_name, ") (NOMINAL)"),
+       x = "FFGN",
+       y = "FBGN") +
+  theme_minimal_grid() +
+  scale_x_continuous(breaks = seq(1, max_x, by = 1)) +
+  scale_y_continuous(breaks = seq(1, max_y, by = 1)) +
+  theme(
+    axis.text = element_text(size = 20),
+    axis.title.x = element_text(size = 25, hjust = 0.5, margin = margin(t = 40, b = 20)),
+    axis.title.y = element_text(size = 25, hjust = 0.5, margin = margin(r = 40, l = 20)),
+    plot.title = element_text(size = 30, face = "bold", color = pokepal("rayquaza", spread = 1), hjust = 0.5, margin = margin(t = 20, b = 20)),
+    legend.position = "none")
+
+  scenario_scatter.05[[scenario_name]] <- scenario_ggscatter
+
+  cat("\nGenerated", scenario_name, "scatterplot \n\n")
+}
+
+# Save the scatterplots
+
+scatterplotDir <- file.path(resultsDir, "4.CAAS_analysis/CAASfigures/Scatterplots/Nominal")
+scatter_save <- graph_save(scenario_scatter.05, scatterplotDir, "scatterplot", 15, 15)
+
+# Create a combined object for ease of visualization
+
+scatterplots_combined.l <- list()
+scatter_combine <- graph_combine(scenario_scatter.05, scatterplots_combined.l, scatterplotDir, "scatterplot", 22, 30)
+
+```
+
+## Pval Barplots
+```{r barplots, fig.height=15, fig.width=15, message=FALSE, warning=FALSE, dev=}
+scenario_barplots <- list()
+scenario_barplots.05 <- list()
+
+for (scenario_name in names(combined_dfs)) {
+  scenario_df <- combined_dfs[[scenario_name]]
+
+  # Combine genes for each scenario into a single data frame
+  scenario_ggbarplot <- ggplot(data.frame(scenario_df), aes(x = discovery.Pvalue)) +
+  geom_histogram(binwidth = 0.01, fill = pokepal("rayquaza", spread = 1), color = "black") +
+  labs(title = paste0("Pvalue distribution (", scenario_name, ")"),
+       x = "P-Value",
+       y = "Frequency") +
+  theme_minimal() +
+  theme(
+    axis.text = element_text(size = 20),
+    axis.title.x = element_text(size = 25, hjust = 0.5, margin = margin(t = 40, b = 20)),
+    axis.title.y = element_text(size = 25, hjust = 0.5, margin = margin(r = 40, l = 20)),
+    plot.title = element_text(size = 30, face = "bold", color = pokepal("rayquaza", spread = 1), hjust = 0.5, margin = margin(t = 20, b = 20)),
+    legend.position = "none")
+  
+  scenario_barplots[[scenario_name]] <- scenario_ggbarplot
+
+  cat("\nGenerated", scenario_name, "pvalue barplot \n\n")
+}
+
+# Save the scatterplots
+
+barplotDir <- file.path(resultsDir, "4.CAAS_analysis/CAASfigures/Barplots")
+barplot_save <- graph_save(scenario_barplots.05, barplotDir, "barplot", 15, 15)
+
+# Create a combined object for ease of visualization
+
+barplots_combined.l <- list()
+barplot_combine <- graph_combine(scenario_barplots, barplots_combined.l, barplotDir, "barplot", 22, 30)
+
+```
+
+## Interaction heatmaps
+
+```{r interaction_heatmaps, message=FALSE, fig.height=15, fig.width=15, dev = "svg"}
+#scenario_heatmaps <- list()
+scenario_heatmaps.05 <- list()
+
+
+for (scenario_name in names(combined_dfs.05)) {
+  scenario_df <- combined_dfs.05[[scenario_name]]
+  
+  filtered_scenario <- scenario_df[scenario_df$discovery.FFGN %in% c(3, 4, 5, 6) & scenario_df$discovery.FBGN %in% c(3, 4, 5, 6), ]
+  
+  scenario_df_split <- filtered_scenario
+  
+  # Split the species in "FFG" and "FBG" columns
+  scenario_df_split$discovery.FFG <- strsplit(scenario_df_split$discovery.FFG, ",")
+  scenario_df_split$discovery.FBG <- strsplit(scenario_df_split$discovery.FBG, ",")
+  
+  # Extract unique species from both FFG and FBG
+  unique_species_FFG <- unique(unlist(scenario_df_split$discovery.FFG))
+  unique_species_FBG <- unique(unlist(scenario_df_split$discovery.FBG))
+  joined_species <- unique(c(unique_species_FFG, unique_species_FBG))
+  
+  # Extract unique set of genes
+  unique_geneset <- unique(scenario_df_split$discovery.Gene)
+  
+    # Create a matrix to store the p-values from the "Pvalue" column for both FFG and FBG
+  pvalue_matrix <- matrix(NA, nrow = length(unique_geneset), ncol = length(unique_species_FFG) + length(unique_species_FBG))
+  rownames(pvalue_matrix) <- unique_geneset
+  colnames(pvalue_matrix) <- c(unique_species_FFG, unique_species_FBG)
+  
+  # Fill the matrix with the p-values from your dataframe for FFG
+  for (gene in unique_geneset) {
+    for (species in unique_species_FFG) {
+      in_FFG <- which(sapply(scenario_df_split$discovery.FFG, function(x) species %in% x) & scenario_df_split$discovery.Gene == gene)
+      
+      if (length(in_FFG) > 0) {
+        # Use the p-value from the first occurrence of the gene and species combination
+        pvalue_matrix[gene, species] <- scenario_df_split$discovery.Pvalue[in_FFG[1]]
+      } else {
+        pvalue_matrix[gene, species] <- NA
+      }
+    }
+  }
+
+  # Fill the matrix with the p-values from your dataframe for FBG
+  for (gene in unique_geneset) {
+    for (species in unique_species_FBG) {
+      in_FBG <- which(sapply(scenario_df_split$discovery.FBG, function(x) species %in% x) & scenario_df_split$discovery.Gene == gene)
+      
+      if (length(in_FBG) > 0) {
+        # Use the p-value from the first occurrence of the gene and species combination
+        pvalue_matrix[gene, species] <- scenario_df_split$discovery.Pvalue[in_FBG[1]]
+      } else {
+        pvalue_matrix[gene, species] <- NA
+      }
+    }
+  }
+  
+  # Read families for annotaitons
+  sp2fam <- read_tsv(file.path(dataDir, "Neoplasia/sp2fam.tab"))
+  joined_species_df <- sp2fam %>%
+    filter(Species %in% joined_species) %>%
+    arrange(match(Species, joined_species))
+
+  # Create annotation data frames
+  ## Annotation cols
+  annotation_col <- data.frame(
+    Family = joined_species_df$Family,
+    Phenotype = factor(rep(c(rep("FG", length(unique_species_FFG)), rep("BG", length(unique_species_FBG))), each = 1)))
+  rownames(annotation_col) <- joined_species
+
+  # Use a random set of colors for the contrast families
+  ## This is the only way I found to deal with different family names in an iterative way
+  color_mapping <- vector()
+  for (fam in unique(joined_species_df$Family)) {
+    color_mapping[[fam]] <- randomColor(1, luminosity = "dark")
+  }
+  
+  # # Annotation colors
+  # ann_colors <- list(
+  #   Family = color_mapping,
+  #   Phenotype = c(FG = "#1B9E77", BG = "#D95F02")
+  # )
+  #   
+  # Sample parameters
+  pheatmap_height <- 25
+
+  # Define the number of rows to display in each section
+  rows_per_section <- 50
+  
+  # Calculate the number of sections
+  num_sections <- ceiling(nrow(pvalue_matrix) / rows_per_section)
+  
+  # Loop through each section and create a separate heatmap
+  for (i in 1:num_sections) {
+    start_row <- (i - 1) * rows_per_section + 1
+    end_row <- min(i * rows_per_section, nrow(pvalue_matrix))
+    
+    subset_matrix <- pvalue_matrix[start_row:end_row, ]
+    
+    # Update annotation colors for each section
+    ann_colors_section <- list(
+      Family = color_mapping,
+      Phenotype = c(FG = "#1B9E77", BG = "#D95F02")
+      # You may need to update this based on the specific values in your subset
+    )
+    
+    # Create a heatmap for the subset
+    scenario_pheatmap <- pheatmap(subset_matrix,
+                                  cluster_cols = FALSE, cluster_rows = FALSE,
+                                  angle_col = 45, legend = TRUE, fontsize = 25, fontsize_row = 20, fontsize_col = 20, fontsize_number = 20,
+                                  color = colorRampPalette(c("white", "#A93070"))(20),
+                                  main = paste0("Pvalue distribution (", scenario_name, ") - Rows ", start_row, " to ", end_row, "(NOMINAL)"),
+                                  height = pheatmap_height,  # Adjust the height as needed
+                                  annotation_col = annotation_col,
+                                  annotation_colors = ann_colors_section)
+    
+    scenario_heatmaps.05[[paste0(scenario_name, "_Section_", i)]] <- scenario_pheatmap
+  }
+  cat("\nGenerated", scenario_name, "contribution heatmap \n\n")
+}
+
+  
+
+# Save the heatmaps
+
+heatmapDir <- file.path(resultsDir, "4.CAAS_analysis/CAASfigures/Heatmaps/Nominal")
+heatmap_save <- graph_save(scenario_heatmaps.05, heatmapDir, "heatmap", pheatmap_height, 25)
+# 
+# #Create a combined object for ease of visualization
+# 
+# heatmaps_combined.l <- list()
+# heatmap_combine <- heatmap_combine_and_save(scenario_heatmaps, heatmapDir, "heatmap", 22, 30)
+
+```
+
+# ORA ANALYSIS
+## GeneList parsing
+### This stopped working, turn to load table
+
+```{r genList_parse, message=FALSE}
+# Parse alignments directory (DONT KNOW WHY THIS ISNT WORKING WHEN IT WAS???)
+# geneList_dir <- file.path(resultsDir, "12.Oncovar_pathways/tcga.txt")
+# geneList_names <- list.files(geneList_dir, recursive = TRUE, full.names = TRUE)
+# geneList <- as.list(geneList_names)
+
+geneList <- file.path(dataDir, "Driver_genes_db/combined_oncodb.txt")
+geneList <- read.table(geneList)
+geneList <- as.character(geneList$V1)
+
+# # If you want to remove the directory path from each file name, you can do the following
+# # Replace '/path/to/your/directory/' with the appropriate path
+# geneList <- lapply(geneList, function(x) gsub("^/home/miguel/TFM/Master_projects/NEOPLASY_PRIMATES/Data/Phase_I-In-sillico-analysis/primate.alignments.231026/", "", x))
+# geneList <- lapply(geneList, function(x) gsub("\\..*", "", x))
+# #write.table(geneList, file.path(dataDir, "Phase_I-In-sillico-analysis/gene_background.txt"), row.names = FALSE, col.names = FALSE, quote = FALSE, sep = "\n")
+# 
+# # geneList_path <- file.path(dataDir, "Gene_alignment.txt")
+# # write_file(geneList, geneList_path)
+
+geneList <- bitr(unique(geneList), fromType = "SYMBOL",
+                    toType = c("ENTREZID","ENSEMBL"),
+                    OrgDb = org.Hs.eg.db,
+                    drop = TRUE)
+
+#write.table(geneList$ENTREZID, file.path(dataDir, "Phase_I-In-sillico-analysis/gene_background_ENTREZ.txt"), row.names = FALSE, col.names = FALSE, quote = FALSE, sep = "\n")
+```
+
+
+```{r genList_parse, message=FALSE}
+
+# Commented out as this is heavy AF, no need to check anything as all species have the same apport
+# Initialize an empty list to store species counts from each file
+# all_species_counts <- list()
+# 
+# for (file in geneList_l) {
+#   # Read the file
+#   lines <- readLines(file)
+#   
+#   # Identify lines containing species names
+#   species_lines <- grep("^[A-Z][a-z]+_[a-z]", lines)
+#   
+#   # Extract species names
+#   species_names <- sub("^(\\S+).*", "\\1", lines[species_lines])
+#   
+#   # Update species counts for the current file
+#   file_species_counts <- table(species_names)
+#   
+#   # Store the counts in the list
+#   all_species_counts[[file]] <- file_species_counts
+# }
+# 
+# # Combine counts from all files
+cumulative_species_counts <- do.call("rbind", all_species_counts)
+
+# Sum the counts for each species across all files
+
+summed_iter_species <- colSums(cumulative_species_counts)
+species_iter_df <- data.frame(Counts = summed_iter_species)
+
+apport_species <- boxplot(species_iter_df, ylab = "Species counts in the whole background genes dataset")
+
+apportDir <- file.path(resultsDir, "4.CAAS_analysis/CAASfigures/Species_Apport_Geneset")
+heatmap_save <- graph_save(apport_species, apportDir, "boxplot", 7, 7)
+```
+
+```{r extract_entrez_ensembl}
+all_combined <- unname(unlist(scenario_genes.05))
+scenario_genes.05[[length(scenario_genes.05)+1]] <- all_combined
+
+for (scenario_name in names(scenario_genes.05)) {
+  gene_vector <- scenario_genes[[scenario_name]]
+  
+  # Convert symbols to IDs
+  gene_ids <-  bitr(unique(gene_vector), fromType = "SYMBOL",
+                    toType = "ENTREZID",
+                    OrgDb = org.Hs.eg.db)
+  
+  write.table(gene_ids$ENSEMBL, file.path(resultsDir, paste0("4.CAAS_analysis/CAASresults/14-11-run/Genes/", scenario_name, "_ensembl.txt")), row.names = FALSE, col.names = FALSE, quote = FALSE, sep = "\n")
+  
+}
+```
+
+## ORA function
+
+```{r ora_function, message=FALSE}
+# ORA analysis function
+  performEnrichmentAnalysis <- function(gene_id, geneList, keyType, ont, pAdjustMethod, pvalueCutoff, qvalueCutoff, orgDb, showCategory, enrichmentFunction) {
+  # Perform enrichment analysis based on the specified function
+  result <- enrichmentFunction(
+    gene            = gene_id,
+    universe        = geneList,
+    keyType         = keyType,
+    OrgDb           = orgDb,
+    ont             = ont,
+    pAdjustMethod   = pAdjustMethod,
+    pvalueCutoff    = pvalueCutoff,
+    qvalueCutoff    = qvalueCutoff,
+    readable        = TRUE
+  )
+}
+```
+
+## ORA plots
+### Lists for plots
+```{r ora_plot list, message=FALSE}
+
+plot_type <- c("bar", "dot", "net", "net2", "hm", "eg", "tree", "upset", "ridge", "pubmed")
+
+go_lists <- list()
+
+for (i in plot_type) {
+  go_lists[[paste0("go_", i)]] <- list()
+}
+
+```
+
+```{r}
+
+go_bp_results <- list()
+go_cc_results <- list()
+go_mf_results <- list()
+kegg_results <- list()
+wp_results <- list()
+reactome_results <- list()
+do_results <- list()
+ncg_results <- list()
+dgn_results <- list()
+em_results <- list()
+
+```
+
+
+## GO analysis
+
+```{r go_analysis, message=FALSE}
+# Was doing it taking into account nominal p-vals but I got annoyed with the low representation, will have to do it both ways probably and check
+
+
+ora_result_dir <- file.path(resultsDir, "4.CAAS_analysis/CAASresults/14-11-run/ORA_results")
+
+createDir <- function(directory) {
+  if (!file.exists(directory)) {
+    dir.create(directory, recursive = TRUE)
+  }
+}
+
+for (scenario_name in names(scenario_genes.05)) {
+  gene_vector <- scenario_genes.05[[scenario_name]]
+  
+  # Convert symbols to IDs
+  gene_ids <-  bitr(gene_vector, fromType = "SYMBOL",
+                    toType = "ENTREZID",
+                    OrgDb = org.Hs.eg.db,
+                    )
+  
+  go_cat <- c("CC", "BP", "MF")
+  go_results <- list()  # Initialize a list to store results
+  
+  for (i in go_cat) {
+    go_result <- performEnrichmentAnalysis(
+      gene_id            = unique(gene_ids$ENTREZID),
+      geneList           = unique(geneList$ENTREZID),
+      keyType            = "ENTREZID",
+      ont                = i,
+      pAdjustMethod      = "BH",
+      pvalueCutoff       = 0.05,
+      qvalueCutoff       = 0.25,
+      orgDb              = org.Hs.eg.db,
+      showCategory       = 20,
+      enrichmentFunction = enrichGO
+    )
+
+    go_dir <- paste0(ora_result_dir, "/GO_", i, "/")
+    createDir(go_dir)
+    write.table(go_result, paste0(go_dir, scenario_name, ".tsv"), sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
+
+    go_results[[paste0("go_", i, "_results")]][[scenario_name]] <- go_result
+  }
+
+    # KEGG
+    gene <- unique(gene_ids$ENTREZID)
+    genelist_entrez <- unique(geneList$ENTREZID)
+
+    kegg_result <- enrichKEGG(
+    gene               = unique(gene_ids$ENTREZID),
+    universe           = genelist_entrez,
+    organism           = 'hsa',
+    pAdjustMethod      = "BH",
+    pvalueCutoff       = 0.05,
+    qvalueCutoff       = 0.25,
+    use_internal_data  = FALSE
+  )
+  kegg_dir <- paste0(ora_result_dir, "/KEGG/")
+  createDir(kegg_dir)
+  write.table(kegg_result, paste0(kegg_dir, scenario_name, ".tsv"), sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
+  kegg_results[[scenario_name]] <- kegg_result
+
+  # WP
+
+  wp_result <- enrichWP(
+  gene               = unique(gene_ids$ENTREZID),
+  organism           = "Homo sapiens",
+  pAdjustMethod      = "BH",
+  pvalueCutoff       = 0.05,
+  qvalueCutoff       = 0.25
+  )
+  wp_dir <- paste0(ora_result_dir, "/WP/")
+  createDir(wp_dir)
+  write.table(wp_result, paste0(wp_dir, scenario_name, ".tsv"), sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
+
+  wp_results[[scenario_name]] <- wp_result
+
+  # DO
+  do_result <- enrichDO(
+    gene = unique(gene_ids$ENTREZID),
+    ont = "DO",
+    pvalueCutoff = 0.05,
+    qvalueCutoff = 0.25,
+    pAdjustMethod = "BH",
+    universe = genelist_entrez,
+    readable = TRUE
+  )
+  do_dir <- paste0(ora_result_dir, "/DO/")
+  createDir(do_dir)
+  write.table(do_result, paste0(do_dir, scenario_name, ".tsv"), sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
+
+  do_results[[scenario_name]] <- do_result
+
+  # PATHWAY
+  reactome_result <- enrichPathway(
+    gene = unique(gene_ids$ENTREZID),
+    organism = "human",
+    pAdjustMethod = "BH",
+    pvalueCutoff = 0.05,
+    qvalueCutoff = 0.25,
+    universe = genelist_entrez,
+    readable = TRUE
+  )
+  reactome_dir <- paste0(ora_result_dir, "/Reactome/")
+  createDir(reactome_dir)
+  write.table(reactome_result, paste0(reactome_dir, scenario_name, ".tsv"), sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
+
+  reactome_results[[scenario_name]] <- reactome_result
+
+  # NCG
+  ncg_result <- enrichNCG(
+    gene = unique(gene_ids$ENTREZID), 
+    universe = genelist_entrez,
+    pAdjustMethod = "BH",
+    pvalueCutoff = 0.05,
+    qvalueCutoff = 0.25,
+    readable = TRUE
+  )
+  ncg_dir <- paste0(ora_result_dir, "/NCG/")
+  createDir(ncg_dir)  
+  write.table(ncg_result, paste0(ncg_dir, scenario_name, ".tsv"), sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)  
+  
+  ncg_results[[scenario_name]] <- ncg_result
+  
+    # DGN
+  dgn_result <- enrichDGN(
+    gene = unique(gene_ids$ENTREZID),
+    universe = genelist_entrez,
+    pAdjustMethod = "BH",
+    pvalueCutoff = 0.05,
+    qvalueCutoff = 0.25,
+    readable = TRUE
+  )
+  dgn_dir <- paste0(ora_result_dir, "/DGN/")
+  createDir(dgn_dir)
+  write.table(dgn_result, paste0(dgn_dir, scenario_name, ".tsv"), sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
+
+  dgn_results[[scenario_name]] <- dgn_result
+  
+    # MSIGDBR H
+  em_cat <- c("H","C4","C5","C6")
+  for (i in em_cat){
+    m_t2g <- msigdbr(species = "Homo sapiens", category = i) %>%
+      dplyr::select(gs_name,entrez_gene,)
+    
+      em_h <- enricher(
+        gene = unique(gene_ids$ENTREZID),
+        pAdjustMethod = "BH", 
+        universe      = geneList$ENTREZID,
+        minGSSize     = 1,
+        maxGSSize     = 500,
+        pvalueCutoff = 0.05,
+        qvalueCutoff = 0.25,
+        TERM2GENE = m_t2g)
+      
+    em_dir <- paste0(ora_result_dir, "/EM_", i, "/")
+    createDir(em_dir)
+    write.table(em_h, paste0(em_dir, scenario_name, ".tsv"), sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
+    
+    em_results[[paste0("em_", i, "_results")]][[scenario_name]] <- em_h
+  }
+}
+
+```
+
+# Plot the graphs
+## Barplots and dotplots
+```{r go_bar, fig.height=15, fig.width=15, message=FALSE, warning=FALSE, dev="svg"}
+
+# Barplots and dotplots
+ora_barplot <- function(go_list, graph_list, ontology) {
+  graph_list <- list()
+  ora_combined.l <- list()
+  
+  for (scenario_name in names(go_list)) {
+    ora_results <- go_list[[scenario_name]]
+    ora_plot <- barplot(ora_results, showCategory = 20, order = TRUE)
+    graph_list[[scenario_name]] <- ora_plot
+
+    plotDir <- file.path(resultsDir, paste0("4.CAAS_analysis/CAASresults/14-11-run/ORA_results/", ontology, "/Barplots/"))
+    ora_barplot_save <- graph_save(graph_list, plotDir, "barplot", 7, 7)
+    # ora_combine <- graph_combine(graph_list, ora_combined.l, plotDir, "barplot", 22, 30)
+  }
+}
+
+go_bar_cc <- ora_barplot(go_cc_results, go_cc_barplots, "GO_CC")
+go_bar_bp <- ora_barplot(go_bp_results, go_bp_barplots, "GO_BP")
+go_bar_mf <- ora_barplot(go_mf_results, go_mf_barplots, "GO_MF")
+kegg_bar  <- ora_barplot(kegg_results, kegg_barplots, "KEGG")
+wp_bar <- ora_barplot(wp_results, wp_barplots, "WP")
+do_bar <- ora_barplot(do_results, do_barplots, "DO")
+reactome_bar <- ora_barplot(reactome_results, reactome_barplots, "Reactome")
+ncg_bar <- ora_barplot(ncg_results, ncg_barplots, "NCG")
+dgn_bar <- ora_barplot(dgn_results, dgn_barplots, "DGN")
+em_bar <- ora_barplot(em_results, em_barplots, "EM")
+
+
+ora_dotplot <- function(go_list, graph_list, ontology) {
+  graph_list <- list()
+  for (scenario_name in names(go_list)) {
+    ora_results <- go_list[[scenario_name]]
+
+    ora_plot <- dotplot(ora_results, showCategory = 20, order = TRUE)
+    graph_list[[scenario_name]] <- ora_plot
+
+    plotDir <- file.path(resultsDir, paste0("4.CAAS_analysis/CAASresults/14-11-run/ORA_results/", ontology, "/Dotplots/"))
+    ora_dotplot_save <- graph_save(graph_list, plotDir, "dotplot", 7, 7)
+    # ora_combine <- graph_combine(graph_list, ora_combined.l, plotDir, "dotplot", 22, 30)
+  }
+}
+
+go_dot_cc <- ora_dotplot(go_cc_results, go_cc_dotplots, "GO_CC")
+go_dot_bp <- ora_dotplot(go_bp_results, go_bp_dotplots, "GO_BP")
+go_dot_mf <- ora_dotplot(go_mf_results, go_mf_dotplots, "GO_MF")
+kegg_dot  <- ora_dotplot(kegg_results, kegg_dotplots, "KEGG")
+wp_dot <- ora_dotplot(wp_results, wp_dotplots, "WP")
+do_dot <- ora_dotplot(do_results, do_dotplots, "DO")
+reactome_dot <- ora_dotplot(reactome_results, reactome_dotplots, "Reactome")
+ncg_dot <- ora_barplot(ncg_results, ncg_dotplots, "NCG")
+dgn_dot <- ora_barplot(dgn_results, dgn_dotplots, "DGN")
+em_dot <- ora_dotplot(em_dotplots, em_, "EM")
+
+
+```
+
+## Otherplots
+
+```{r otherplots, message=FALSE, fig.height=7, fig.width=7, dev = "svg"}
+ora_otherplot <- function(go_list, graph_list, ontology) {
+  graph_list <- list()
+  graph_list <- paste0(graph_list,"_", ontology)
+  graph_list <- list()
+  for (scenario_name in names(go_list)) {
+    ora_results <- go_list[[scenario_name]]
+
+  # Network plots
+  p1 <- cnetplot(ora_results)
+  ## categorySize can be scaled by 'pvalue' or 'geneNum'
+  p2 <- cnetplot(ora_results, categorySize = "pvalue")
+  p3 <- cnetplot(ora_results, circular = TRUE, colorEdge = TRUE)
+  ora_network <- cowplot::plot_grid(p1, p2, p3, ncol = 3, labels=LETTERS[1:3], rel_widths=c(.8, .8, 1.2))
+  graph_list[[scenario_name]] <- ora_network
+      plotDir <- file.path(resultsDir, paste0("4.CAAS_analysis/CAASfigures/", ontology, "/ORA_Network/"))
+    ora_dotplot_save <- graph_save(graph_list, plotDir, "ORA_network", 7, 7)
+
+
+  p4 <- cnetplot(ora_results, node_label = "category",
+        cex_label_category = 1.2)
+  p5 <- cnetplot(ora_results, node_label="gene",
+          cex_label_gene = 0.8)
+  p6 <- cnetplot(ora_results, node_label = "all")
+  p7 <- cnetplot(ora_results, node_label = "none",
+          color_category='firebrick',
+          color_gene='steelblue')
+  ora_network_2 <- cowplot::plot_grid(p4, p5, p6, p7, ncol=2, labels=LETTERS[1:4])
+  graph_list[[scenario_name]] <- ora_network_2
+        plotDir <- file.path(resultsDir, paste0("4.CAAS_analysis/CAASfigures/", ontology, "/ORA_Network_2/"))
+    ora_dotplot_save <- graph_save(graph_list, plotDir, "ORA_network_2", 7, 7)
+
+  # Heatmaps
+  p8 <- heatplot(ora_results, showCategory = 5)
+  p9 <- heatplot(ora_results, showCategory = 20)
+  ora_heatmap <- cowplot::plot_grid(p8, p9, ncol = 1, labels = LETTERS[1:2])
+    graph_list[[scenario_name]] <- ora_heatmap
+        plotDir <- file.path(resultsDir, paste0("4.CAAS_analysis/CAASfigures/", ontology, "/ORA_Heatmap/"))
+    ora_dotplot_save <- graph_save(graph_list, plotDir, "ORA_Heatmap", 7, 7)
+ # 
+  # Enrichment maps
+
+  result_tw <- pairwise_termsim(ora_results)
+  p10 <- emapplot(result_tw)
+  p11 <- emapplot(result_tw, cex_category = 1.5)
+  p12 <- emapplot(result_tw, layout = "kk")
+  p13 <- emapplot(result_tw, cex_category = 1.5,layout = "kk")
+  ora_eg <- cowplot::plot_grid(p10, p11, p12, p13, ncol = 2, labels = LETTERS[1:4])
+    graph_list[[scenario_name]] <- ora_eg
+        plotDir <- file.path(resultsDir, paste0("4.CAAS_analysis/CAASfigures/", ontology, "/ORA_EnrichmentMap/"))
+    ora_dotplot_save <- graph_save(graph_list, plotDir, "ORA_EnrichmentMap", 7, 7)  
+
+  # # Tree plots
+  # 
+  # p14 <- treeplot(result_tw)
+  # p15 <- treeplot(result_tw, hclust_method = "average")
+  # ora_tree <- treeaplot::plot_list(p14, p15, tag_levels='A')
+  #   graph_list[[scenario_name]] <- ora_tree
+  #       plotDir <- file.path(resultsDir, paste0("4.CAAS_analysis/CAASfigures/", ontology, "/ORA_Tree/"))
+  #   ora_dotplot_save <- graph_save(graph_list, plotDir, "ORA_Tree", 7, 7)  
+  
+  # UpSet plots
+  ora_upset <- enrichplot::upsetplot(ora_results)
+  ora_upset
+      graph_list[[scenario_name]] <- ora_upset
+      
+        plotDir <- file.path(resultsDir, paste0("4.CAAS_analysis/CAASfigures/", ontology, "/ORA_Upset/"))
+    ora_dotplot_save <- graph_save(graph_list, plotDir, "ORA_Upset", 7, 7)
+  
+   # # RidgePlot
+   # ora_ridgeplot <- enrichplot::ridgeplot(ora_results)
+   #  graph_list[[scenario_name]] <- ora_ridgeplot
+   #  ora_ridgeplot
+   #       plotDir <- file.path(resultsDir, paste0("4.CAAS_analysis/CAASfigures/", ontology, "/ORA_Ridge/"))
+   #  ora_dotplot_save <- graph_save(graph_list, plotDir, "ORA_Ridge", 7, 7)
+
+   # # PubMed trend
+   # terms <- top_categories$Description[1:20]
+   # p16 <- pmcplot(terms, 2010:2023)
+   # p17 <- pmcplot(terms, 2010:2023, proportion=FALSE)
+   # ora_pubmed <- plot_grid(p16, p17, ncol=2)
+   #  graph_list[[scenario_name]] <- ora_pubmed
+   #      plotDir <- file.path(resultsDir, paste0("4.CAAS_analysis/CAASfigures/", ontology, "/ORA_PubMed/"))
+   #  ora_dotplot_save <- graph_save(graph_list, plotDir, "ORA_PubMed", 15, 15)  
+  }
+}
+
+go_cc_otherplot <- ora_otherplot(go_cc_results, go_cc_other_list, "GO_CC")
+go_bp_otherplot <- ora_otherplot(go_bp_results, go_bp_other_list, "GO_BP")
+go_mf_otherplot <- ora_otherplot(go_mf_results, go_mf_other_list, "GO_MF")
+
+
+
+
+```
+
+# Complex results
+
+```{r cluster_comparison, message=FALSE, fig.height=15, fig.width=15, dev = "svg"}
+# Filter names that contain "cer", "cal", and "hom"
+cer <- Filter(function(x) grepl("cer", x, ignore.case = TRUE), names(scenario_genes))
+cal <- Filter(function(x) grepl("cal", x, ignore.case = TRUE), names(scenario_genes))
+hom <- Filter(function(x) grepl("hom", x, ignore.case = TRUE), names(scenario_genes))
+
+cal_logical <- names(scenario_genes) %in% cal
+hom_logical <- names(scenario_genes) %in% hom
+cer_logical <- names(scenario_genes) %in% cer
+
+# Q0: All
+all_list <- scenario_genes.05
+
+# Q1: Among Primates (so between cal-hom, cal-cer-hom, and cer-hom)
+hom_list <- scenario_genes.05[hom_logical]
+
+# Q2: 2v2
+cal_hom <- scenario_genes.05[cal_logical & !cer_logical]
+cer_hom <- scenario_genes.05[cer_logical & !cal_logical]
+cal_cer <- scenario_genes.05[cer_logical & cal_logical & !hom_logical]
+cal_cer[["cal-cal_combined_3-8"]] <- scenario_genes.05[["cal-cal_combined_3-8"]]
+cal_cer[["cer-cer_combined_3-8"]] <- scenario_genes.05[["cer-cer_combined_3-8"]]
+
+# Q3: intrafamilies
+cal_cal <- scenario_genes.05[!cer_logical & cal_logical & !hom_logical]
+cer_cer <- scenario_genes.05[cer_logical & !cal_logical & !hom_logical]
+
+# Open lists
+egos <- list()
+q1_entrez <- list()
+q2_entrez <- list()
+q3_entrez <- list()
+ora_go <- list()
+ora_kegg <- list()
+ora_path <- list()
+ora_do <- list()
+ora_dgn <- list()
+ora_ncg <- list()
+ora_em <- list()
+ora_go_cnet <- list()
+ora_kegg_cnet <- list()
+ora_path_cnet <- list()
+ora_do_cnet <- list()
+ora_dgn_cnet <- list()
+ora_ncg_cnet <- list()
+ora_em_cnet <- list()
+```
+
+```{r cluster_comparison, eval=FALSE, fig.height=5, fig.width=5, message=FALSE, warning=FALSE, dev=, include=FALSE}
+
+ORA_analysis <- function(scenario_list, question_entrez, question){
+  question_entrez <- list()
+  for (list_name in names(scenario_list)) {
+    gene_vector <- scenario_list[[list_name]]
+    
+    # Convert symbols to IDs
+    gene_ids <-  bitr(unique(gene_vector), fromType = "SYMBOL",
+                      toType = "ENTREZID",
+                      OrgDb = org.Hs.eg.db)
+    question_entrez[[list_name]] <- unique(gene_ids$ENTREZID)
+  }
+  
+  go_cat <- c("CC","BP","MF")
+  for (i in go_cat){
+    ego <- compareCluster(geneCluster = question_entrez,
+                       fun = enrichGO,
+                       OrgDb = org.Hs.eg.db,
+                       universe = geneList$ENTREZID,
+                       pAdjustMethod = "BH",
+                       pvalueCutoff = 0.05,
+                       qvalueCutoff = 0.25,
+                       minGSSize = 10,
+                       maxGSSize = 500,
+                       readable = TRUE,
+                       ont = i
+    )
+    egos[[i]] <- c(egos[[i]], ego)
+  }
+  
+  path <- compareCluster(geneClusters = question_entrez,
+                       fun = enrichPathway,
+                       organism = "human",
+                       pAdjustMethod = "BH",
+                       pvalueCutoff = 0.05,
+                       qvalueCutoff = 0.25,
+                       minGSSize = 10,
+                       maxGSSize = 500,
+                       universe = geneList$ENTREZID,
+                       readable = TRUE
+                       ) 
+  
+  do <- compareCluster(geneClusters = question_entrez,
+                        fun = enrichDO,
+                        ont = "DO",
+                        pAdjustMethod = "BH",
+                        pvalueCutoff = 0.05,
+                        qvalueCutoff = 0.25,
+                        minGSSize = 10,
+                        maxGSSize = 500,
+                        universe = geneList$ENTREZID,
+                        readable = TRUE
+                        )
+  
+  ncg <- compareCluster(geneClusters = question_entrez,
+                        fun = enrichNCG,
+                        pAdjustMethod = "BH",
+                        pvalueCutoff = 0.05,
+                        qvalueCutoff = 0.25,
+                        minGSSize = 10,
+                        maxGSSize = 500,
+                        universe = geneList$ENTREZID,
+                        readable = TRUE
+                        )
+  
+  dgn <- compareCluster(geneClusters = question_entrez,
+                        fun = enrichDGN,
+                        pAdjustMethod = "BH",
+                        pvalueCutoff = 0.05,
+                        qvalueCutoff = 0.25,
+                        minGSSize = 10,
+                        maxGSSize = 500,
+                        universe = geneList$ENTREZID,
+                        readable = TRUE
+                        )
+  ora_dgn[[question_entrez]] <- dgn
+
+  
+  kegg <- compareCluster(geneCluster = question_entrez, 
+                     fun = enrichKEGG, 
+                     universe = geneList$ENTREZID,
+                     pAdjustMethod = "BH",
+                     pvalueCutoff = 0.05,
+                     qvalueCutoff = 0.25,
+                     minGSSize = 10,
+                     maxGSSize = 500
+                     )
+  ora_kegg[[question_entrez]] <- kegg
+
+  
+      # MSIGDBR H
+  em_cat <- c(H,C4,C5,C6)
+  for (i in em_cat){
+    m_t2g <- msigdbr(species = "Homo sapiens", category = i) %>%
+      dplyr::select(gs_name,entrez_gene)
+    
+      emh <- compareCluster(
+        gene = gene,
+        pAdjustMethod = "BH", 
+        universe      = geneList$ENTREZID,
+        pAdjustMethod = "BH",
+        pvalueCutoff = 0.05,
+        qvalueCutoff = 0.25,
+        minGSSize = 10,
+        maxGSSize = 500,
+        TERM2GENE = m_t2g)
+      
+    ora_em[[i]] <- c(ora_em[[i]], emh)
+
+  }
+  
+    plotDir <- file.path(resultsDir, paste0("4.CAAS_analysis/CAASfigures/ORA/", question, "/Dotplots/"))
+    
+  cat <- c(go, kegg, path, do, dgn, ncg, em)
+  for (i in cat){
+    i <- setReadable(i, OrgDb = org.Hs.eg.db, keyType="ENTREZID")
+    i <- enrichplot::pairwise_termsim(i, showCategory = 20)
+    ora_plot <- dotplot(i, showCategory=20)
+    paste0("ora_", i)[[list_name]] <- ora_plot
+    ora_dotplot_save <- graph_save(paste0("ora_", i), plotDir, paste0("\'", i, "\'"), 10, 10)
+  }
+  # 
+  # plotDir <- file.path(resultsDir, paste0("4.CAAS_analysis/CAASfigures/ORA/", question, "/CNET/"))
+  # 
+  # 
+  # ora_plot <- cnetplot(go)
+  # ora_go_cnet[[list_name]] <- ora_plot
+  # ora_dotplot_save <- graph_save(ora_go_cnet, plotDir, "go", 10, 10)
+  # 
+  # ora_plot <- cnetplot(kegg)
+  # ora_kegg_cnet[[list_name]] <- ora_plot
+  # ora_dotplot_save <- graph_save(ora_kegg_cnet, plotDir, "kegg", 10, 10)
+  # 
+  # ora_plot <- cnetplot(path)
+  # ora_path_cnet[[list_name]] <- ora_plot
+  # ora_dotplot_save <- graph_save(ora_path_cnet, plotDir, "path", 10, 10)
+  # 
+  # ora_plot <- cnetplot(do)
+  # ora_do_cnet[[list_name]] <- ora_plot
+  # ora_dotplot_save <- graph_save(ora_do_cnet, plotDir, "do", 10, 10)
+}
+
+ALL <- ORA_analysis(all_list, all_lis_entrez, "Q0")
+ORA_Q1 <- ORA_analysis(hom_list, hom_lis_entrez, "Q1")
+ORA_Q2_cal_hom <- ORA_analysis(cal_hom, cal_hom_entrez, "Q2")
+ORA_Q2_cer_hom <- ORA_analysis(cer_hom, cer_hom_entrez, "Q2")
+ORA_Q2_cal_cer <- ORA_analysis(cal_cer, cal_cer_entrez, "Q2")
+ORA_Q3_cal_cal <- ORA_analysis(cal_cal, cal_cal_entrez, "Q3")
+ORA_Q3_cer_cer <- ORA_analysis(cer_cer, cer_cer_entrez, "Q3")
+
+```

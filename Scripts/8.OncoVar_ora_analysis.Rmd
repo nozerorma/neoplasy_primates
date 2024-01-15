@@ -1,0 +1,137 @@
+---
+title: "oncovar_ora_analysis"
+author: "Miguel Ramon"
+date: "`r Sys.Date()`"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+################################## 
+
+# GENE ANALYSIS
+
+### PRIMATES' NEOPLASY PROJECT
+
+### MIGUEL RAMON ALONSO
+
+################################## 
+
+```{r setup}
+
+knitr::opts_knit$set(root.dir = "/home/miguel/IBE-UPF/TFM/Master_projects/NEOPLASY_PRIMATES")
+knitr::opts_chunk$set(engine.path = list(
+python = '/home/miguel/IBE-UPF/TFM/Master_projects/NEOPLASY_PRIMATES/TreeCluster/venv/bin/python'))
+
+```
+
+```{r dirdef}
+
+workingDir <- getwd()
+dataDir <- file.path(workingDir, "Data")
+resultsDir <- file.path(workingDir,"Out") 
+
+```
+
+```{r check-wd}
+
+getwd()
+
+```
+
+### Seed and library loading
+
+```{r,warning=FALSE,message=FALSE}
+
+set.seed(1998)
+
+# General use libraries
+library(phytools)
+library(dplyr)
+library(tidyr)
+library(dplyr)
+
+# Plotting
+library(ggtree)
+library(ggplot2)
+library(cowplot)
+library(patchwork)
+library(gridExtra)
+
+# Gene ontology
+library(msigdbr)
+library(enrichplot)
+library(DOSE)
+
+# library(DOSE)
+library(clusterProfiler)
+library(org.Hs.eg.db)
+
+# Colors
+library(palettetown)
+
+```
+
+# Common functions
+
+```{r common_functions}
+
+# Function to read TSV files and return data frames
+read_csv_to_df <- function(file) {
+  df <- read.csv(file, sep = "\t")
+  return(df)
+}
+
+createDir <- function(directory) {
+  if (!file.exists(directory)) {
+    dir.create(directory, recursive = TRUE)
+  }
+}
+
+```
+
+# Load oncovar enrichment data
+
+```{r load_oncovar_ora}
+caas_hits <- read.csv(file.path(resultsDir, "4.CAAS_analysis/CAASresults/14-11-run/Genes/txt/all_combined.txt"), col.names = TRUE)
+caas_hits <- caas_hits$TRUE.
+
+# Load our caas_background
+caas_bg <- read.csv(file.path(dataDir, "Gene_background/gene_background.txt"), col.names = TRUE)
+caas_bg <- caas_bg$TRUE.
+
+# Use lapply to read all TSV files into a list of data frames
+oncovar_db <- read.csv(file.path(dataDir, "Driver_genes_db/OncoVar/TCGA.PanCancer.onco.genes.OncoVar.tsv"), sep = "\t")
+
+```
+
+
+```{r extract_barplots_oncovar, fig.height = 7, fig.width = 10, dev = "svg"}
+gene_list <- bitr(geneID = caas_hits, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Hs.eg.db, drop = TRUE)
+gene_bg <- bitr(geneID = caas_bg, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Hs.eg.db, drop = TRUE)
+oncovar_list <- oncovar_db$Gene_symbol
+oncovar_bg <- bitr(geneID = oncovar_list, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Hs.eg.db, drop = TRUE)
+
+oncovar_caashits <- intersect(caas_hits$TRUE., oncovar_bg$SYMBOL)
+
+
+ncg_nocoinc <- enrichNCG(gene = gene_list$ENTREZID,
+                        pvalueCutoff = 0.25,
+                        qvalueCutoff = 0.25,
+                        universe = gene_bg$ENTREZID,
+                        readable = TRUE)
+
+write.csv(ncg_nocoinc, "Out/17.Enrichments/Whole_genefield_enrichment/ncg_nocoinc.tsv", sep = "\t", row.names = FALSE)
+
+# Barplot and dotplot
+barplot(ncg_nocoinc, showCategory = 20, font.size = 20)
+```
+
+
+```{r extract_barplots_oncovar, fig.height = 6, fig.width = 8, dev = "svg"}
+# Circular plot
+p3 <- cnetplot(ncg_nocoincx, circular = TRUE, colorEdge = TRUE)
+
+p3
+
+```
