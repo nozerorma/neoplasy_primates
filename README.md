@@ -1,6 +1,6 @@
 # Neoplasy Primates
 
-## About-me
+## Description
 
 This repository contains supplementary data and code for the study investigating genetic factors associated with cancer prevalence in primates. The research utilizes phylogenetic comparative methods, specifically CAAS and RER analysis of orthologous proteins. The study uncovers mutations in key cancer driver genes (ABL2, KMT2C, TGFBR2) involved in various carcinogenic pathways. The presence of these mutations across diverse primate species suggests shared evolutionary mechanisms in cancer development. The findings emphasize the importance of analyzing a broader range of genes, considering factors such as body size, longevity, sex, or tumoral origin.
 
